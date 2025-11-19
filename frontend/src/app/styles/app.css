@@ -1,0 +1,20 @@
+html,
+body {
+  height: 100%;
+  padding: 0;
+
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: var(--color-black);
+
+  background-color: var(--color-white);
+}
+
+/**
+ * 1. Safari resize fix.
+ * 2. Set default text size as 10px.
+ */
+html {
+  min-height: 0; /* 1 */
+  font-size: 62.5%; /* 2 */
+}

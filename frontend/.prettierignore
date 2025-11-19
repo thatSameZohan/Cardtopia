@@ -1,0 +1,4 @@
+*.yml
+dist
+logs
+node_modules
