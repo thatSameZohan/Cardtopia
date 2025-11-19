@@ -1,0 +1,14 @@
+spring:
+  datasource:
+    username: postgres
+    password: 5784
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:5432/cardtopia_db
+  jpa:
+    hibernate:
+      ddl-auto: none
+  port: 8080
+jwt:
+  secret: afafa876saf876saf876as8sf6s87as6f7fas6fas78f6
+  access-ms: 600000 #10 min
+  refresh-ms: 86400000 #1 day
