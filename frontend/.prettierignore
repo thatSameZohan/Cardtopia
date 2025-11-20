@@ -1,4 +1,10 @@
-*.yml
-dist
-logs
-node_modules
+# Dependencies
+/node_modules
+
+# Build artifacts
+/.next/
+/out/
+
+# Other
+/coverage/
+.DS_Store
