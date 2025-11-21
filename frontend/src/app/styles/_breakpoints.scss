@@ -1,0 +1,16 @@
+$breakpoints: (
+  xs: 0, // 0 - 430
+  sm: 431, // 431 - 727
+  md: 728, // 728 - 1024
+  lg: 1025, // 1025 - 1440
+  xl: 1441, // 1441 - 1919
+  xxl: 1920, // 1920 - 2559
+  xxxl: 2560, // 2560 - ...
+) !default;
+
+// stylelint-disable-next-line
+:export {
+  @each $key, $value in $breakpoints {
+    #{$key}: $value;
+  }
+}

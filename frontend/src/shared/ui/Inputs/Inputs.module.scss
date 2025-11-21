@@ -1,0 +1,10 @@
+.inputLabel {
+  font-size: medium;
+  font-weight: 600;
+}
+
+:global(.mantine-InputWrapper-root) .inputError {
+  margin: 5px 0;
+  color: red;
+}
+

@@ -1,0 +1,11 @@
+FROM node:20-slim
+
+WORKDIR /app
+
+COPY package*.json ./
+
+RUN npm install
+
+# Копировать остальное не нужно, так как мы используем volumes
+
+CMD ["npm", "run", "dev"]

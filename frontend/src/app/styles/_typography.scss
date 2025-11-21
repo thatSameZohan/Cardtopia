@@ -1,0 +1,8 @@
+@mixin typography-example {
+  font-family: var(--inter); // Next.js font variable
+  font-size: 4.8rem;
+  font-feature-settings: 'ss03'; // alt glyphs example
+  font-weight: 400;
+  line-height: 117%;
+  letter-spacing: 0;
+}
