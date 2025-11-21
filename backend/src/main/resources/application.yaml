@@ -1,9 +1,9 @@
 spring:
   datasource:
-    username: postgres
-    password: 5784
+    username: postgres.jfwbldocxafjzxhufaqm
+    password: postgres
     driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://localhost:5432/cardtopia_db
+    url: jdbc:postgresql://aws-1-eu-west-1.pooler.supabase.com:5432/postgres
   jpa:
     hibernate:
       ddl-auto: none
