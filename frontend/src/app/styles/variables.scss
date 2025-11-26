@@ -1,0 +1,100 @@
+/* stylelint-disable */
+
+// ------------------------------
+//           ПАЛИТРА
+// ------------------------------
+
+// Основные цвета
+$color-primary-300: #7ea18a;
+$color-primary-600: #025a4a;
+
+// Нейтральные
+$color-neutral-300: #7ea18a;
+
+// Опасность/Ошибка
+$color-danger-500: #ff4d4d; // Пример
+
+// Светлые
+$color-light-800: #c0e4cd;
+$color-light-900: #ecfff2;
+
+// Темные
+$color-dark-bg: #0e1b13;
+$color-dark-border: #223027;
+$color-dark-border-hover: #244a32;
+$color-dark-border-active: #000;
+$color-dark-shadow: rgba(0, 0, 0, 0.4);
+
+// ------------------------------
+//           ФОНЫ
+// ------------------------------
+
+$bg-main: #0c1410;
+$bg-muted: #17291e;
+$bg-dark-gradient: linear-gradient(180deg, #0c1711 0%, #0a120d 34.73%, #0a120d 100%);
+$bg-glow-gradient: linear-gradient(269deg, #00120f 0%, #025a4a 49.14%, #00120f 100%);
+$bg-auth-wrapper: rgba(5, 20, 12, 0.65);
+
+// ------------------------------
+//           ТЕКСТ
+// ------------------------------
+
+$text-gradient-light: linear-gradient(180deg, #d8fee5 0%, #c0e4cd 100%);
+$text-gradient-primary: linear-gradient(180deg, #ecfff2 23.28%, #c0e4cd 95.94%);
+$text-color-link: #7ea18a;
+$text-color-link-hover: #a1d4b3;
+
+// ------------------------------
+//           ТЕНИ
+// ------------------------------
+
+$shadow-glow: 0 0 40px rgba(0, 255, 180, 0.25), 0 4px 10px rgba(0, 0, 0, 0.5);
+$shadow-glow-active: 0 0 45px 0 rgba(56, 255, 126, 0.45), inset 0 0 0 1px #005141, inset 0 4px 12px 0 rgba(5, 176, 143, 0.6), inset 0 0 45px 0 rgba(5, 176, 143, 0.6);
+$shadow-card-hover: 0 1px 11px $color-primary-600;
+$shadow-auth-wrapper: 0 0 40px rgba(0, 0, 0, 0.4), 0 0 25px rgba(0, 80, 55, 0.25) inset;
+$shadow-input-autofill: 0 0 0 30px rgba(0, 0, 0, 0.25) inset !important;
+$text-shadow-glow: 0 0 2px 0 rgba(0, 0, 0, 0.28), 0 0 5px 0 rgba(3, 150, 122, 0.45);
+
+// ------------------------------
+//           РАЗМЕРЫ
+// ------------------------------
+
+// Отступы
+$spacing-xs: 4px;
+$spacing-sm: 8px;
+$spacing-md: 10px;
+$spacing-lg: 15px;
+$spacing-xl: 25px;
+$spacing-xxl: 30px;
+
+// Ширина/Высота
+$button-height-md: 39px;
+$button-height-lg: 44px;
+$checkbox-size: 20px;
+$loader-size: 18px;
+$site-max-width: 1200px; // Пример
+
+// ------------------------------
+//        СКРУГЛЕНИЯ (RADIUS)
+// ------------------------------
+
+$radius-sm: 4px;
+$radius-md: 6px;
+$radius-lg: 8px;
+$radius-xl: 15px;
+$radius-xxl: 22px;
+$radius-xxxl: 24px;
+$radius-circle: 50%;
+
+// ------------------------------
+//           ПЕРЕХОДЫ
+// ------------------------------
+
+$transition-fast: all 0.1s ease-out;
+$transition-base: all 0.2s ease-in-out;
+$transition-form: background-color 9999s ease-in-out 0s;
+
+// ------------------------------
+//           ШРИФТЫ
+// ------------------------------
+

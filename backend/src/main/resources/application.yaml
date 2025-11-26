@@ -1,0 +1,14 @@
+spring:
+  datasource:
+    username: postgres.jfwbldocxafjzxhufaqm
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://aws-1-eu-west-1.pooler.supabase.com:5432/postgres
+  jpa:
+    hibernate:
+      ddl-auto: none
+  port: 8080
+jwt:
+  secret: afafa876saf876saf876as8sf6s87as6f7fas6fas78f6
+  access-ms: 600000 #10 min
+  refresh-ms: 86400000 #1 day

@@ -1,0 +1,140 @@
+/* Переменные — первым делом */
+@import './variables.scss';
+
+/* Normalize — вторым (чтобы он не затёр переменные) */
+@import './normalize.css';
+@import './fonts.scss';
+
+:root {
+  --font-family: 'Roboto', sans-serif;
+  --color-primary-300: #7ea18a;
+  --color-primary-600: #025a4a;
+  --color-neutral-300: #7ea18a;
+  --color-danger-500: #ff4d4d;
+  --color-light-800: #c0e4cd;
+  --color-light-900: #ecfff2;
+  --bg-main: #0c1410;
+  --bg-muted: #17291e;
+  --site-max-width: 1200px;
+  --spacing-4: 10px;
+  --color-secondary-500: #7ea18a;
+  --color-tertiary-500: #7ea18a;
+  --color-tertiary-600: #025a4a;
+  --radius-md: 6px;
+}
+/* -----------------------------
+   БАЗОВЫЕ НАСТРОЙКИ ДОКУМЕНТА
+-------------------------------- */
+
+/* Высота документа всегда тянется */
+html,
+body {
+  height: 100%;
+}
+
+/* Настройка рендеринга текста */
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-size: 62.5%;
+}
+
+/* Глобальный фон и текст */
+body {
+  margin: 0;
+
+  background: radial-gradient(circle at center, transparent 0%, rgba(0, 0, 0, 0.25) 100%), var(--bg-main);
+  color: var(--color-light-800);
+
+  font-family: 'Roboto', system-ui, sans-serif;
+  font-weight: 400;
+  line-height: 1.5;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding-top: 10vh; // Смещаем контент немного вниз
+}
+
+/* -----------------------------
+   ОБЩИЕ СТИЛИ
+-------------------------------- */
+
+/* Ограничивающий контейнер */
+.container {
+  width: 100%;
+  max-width: var(--site-max-width);
+  margin: 0 auto;
+  padding: 0 var(--spacing-4);
+}
+
+/* Реалистичные плавные переходы */
+a,
+button {
+  transition: $transition-base;
+}
+
+/* Скинуть авто outline, но оставить его доступным */
+:focus-visible {
+  outline: 2px solid var(--color-secondary-500);
+  outline-offset: 3px;
+}
+
+/* Прятать скролл, но оставлять его рабочим — красиво для игр */
+::-webkit-scrollbar {
+  width: $spacing-md;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-muted);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-tertiary-500);
+  border-radius: var(--radius-md);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-tertiary-600);
+}
+
+/* -----------------------------
+   ТИПОГРАФИКА
+-------------------------------- */
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin: 0;
+  font-family: 'Roboto', sans-serif;  
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--color-light-900);
+}
+
+p {
+  margin: 0;
+}
+
+/* Кнопки без селекта (приятно для игр) */
+button {
+  user-select: none;
+}
+
+/* Скрытые элементы для игровых механик */
+.hidden {
+  display: none !important;
+}
+
+/* Глобальное переопределение стилей автозаполнения WebKit */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: $shadow-input-autofill;
+  -webkit-text-fill-color: white !important;
+  transition: $transition-form;
+  box-shadow: inset 0 0 20px 20px rgba(0, 0, 0, 0.25) !important;
+  caret-color: white !important; // Делаем курсор видимым на темном фоне
+}

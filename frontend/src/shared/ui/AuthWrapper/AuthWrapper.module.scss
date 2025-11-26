@@ -1,0 +1,71 @@
+@use '@/app/styles/variables.scss' as *;
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xl;
+  border: 1px solid #1c3023;
+  border-radius: $radius-xxxl;
+  padding: $spacing-xxl $spacing-xl;
+  width: 350px;
+  min-width: 350px;
+  background: $bg-auth-wrapper;
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(60, 120, 80, 0.25);
+  box-shadow: $shadow-auth-wrapper;
+  border-radius: $radius-xxl;
+
+  z-index: 1;
+}
+
+.container > form {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xl;
+}
+
+.header {
+  text-align: center;
+}
+
+.link {
+  font-family: var(--font-family);
+  font-weight: 300;
+  font-size: 14px;
+  text-align: center;
+  color: $text-color-link;
+  text-decoration: none;
+  transition: $transition-base;
+
+  &:hover {
+    color: $text-color-link-hover;
+    text-decoration: underline;
+  }
+}
+
+.linksContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $spacing-lg;
+}
+
+.title {
+  /* Стили из предыдущих шагов, можно вынести в typography */
+  font-family: var(--font-family);
+  font-weight: 700;
+  font-size: 25px;
+  line-height: 100%;
+  background: $text-gradient-light;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: $spacing-md;
+}
+
+.subtitle {
+  font-family: var(--font-family);
+  font-weight: 300;
+  font-size: 16px;
+  color: $text-color-link;
+}

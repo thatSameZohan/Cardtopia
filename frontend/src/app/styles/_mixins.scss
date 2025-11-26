@@ -1,0 +1,30 @@
+// Этот миксин позволяет применять стили при наведении,
+// что полезно для устройств без hover-состояния.
+@mixin hover {
+  @media (hover: hover) {
+    &:hover {
+      @content;
+    }
+  }
+}
+
+// Базовые стили для всех кнопок
+@mixin button-base {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 14px;
+  border: none;
+  text-align: center;
+  text-decoration: none;
+  vertical-align: middle;
+  cursor: pointer;
+  user-select: none;
+  background-color: transparent;
+  transition: all 0.2s ease-in-out;
+  width: 100%;
+  &:disabled {
+    cursor: not-allowed;
+  }
+}
