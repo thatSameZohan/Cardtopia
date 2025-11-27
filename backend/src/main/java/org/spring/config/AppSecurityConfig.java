@@ -21,8 +21,8 @@ public class AppSecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http.authorizeHttpRequests(auth->
         {
-            auth.requestMatchers("/**").permitAll()
-                .anyRequest().authenticated();
+            auth.requestMatchers("/v1/api/auth/**").permitAll() // Разрешаем доступ к эндпоинтам аутентификации
+                .anyRequest().authenticated(); // Все остальные запросы требуют аутентификации
         })
 //                .formLogin(custom -> {
 //                    custom  .usernameParameter("login")
@@ -36,8 +36,8 @@ public class AppSecurityConfig {
 //                })
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
-                .cors(AbstractHttpConfigurer::disable)
                 .csrf(AbstractHttpConfigurer::disable)
+                .cors(cors -> {}) // Включаем CORS с дефолтной конфигурацией
         .build();
     }
 }
