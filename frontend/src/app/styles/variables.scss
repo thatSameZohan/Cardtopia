@@ -48,12 +48,22 @@ $text-color-link-hover: #a1d4b3;
 //           ТЕНИ
 // ------------------------------
 
-$shadow-glow: 0 0 40px rgba(0, 255, 180, 0.25), 0 4px 10px rgba(0, 0, 0, 0.5);
-$shadow-glow-active: 0 0 45px 0 rgba(56, 255, 126, 0.45), inset 0 0 0 1px #005141, inset 0 4px 12px 0 rgba(5, 176, 143, 0.6), inset 0 0 45px 0 rgba(5, 176, 143, 0.6);
+$shadow-glow:
+  0 0 40px rgba(0, 255, 180, 0.25),
+  0 4px 10px rgba(0, 0, 0, 0.5);
+$shadow-glow-active:
+  0 0 45px 0 rgba(56, 255, 126, 0.45),
+  inset 0 0 0 1px #005141,
+  inset 0 4px 12px 0 rgba(5, 176, 143, 0.6),
+  inset 0 0 45px 0 rgba(5, 176, 143, 0.6);
 $shadow-card-hover: 0 1px 11px $color-primary-600;
-$shadow-auth-wrapper: 0 0 40px rgba(0, 0, 0, 0.4), 0 0 25px rgba(0, 80, 55, 0.25) inset;
+$shadow-auth-wrapper:
+  0 0 40px rgba(0, 0, 0, 0.4),
+  0 0 25px rgba(0, 80, 55, 0.25) inset;
 $shadow-input-autofill: 0 0 0 30px rgba(0, 0, 0, 0.25) inset !important;
-$text-shadow-glow: 0 0 2px 0 rgba(0, 0, 0, 0.28), 0 0 5px 0 rgba(3, 150, 122, 0.45);
+$text-shadow-glow:
+  0 0 2px 0 rgba(0, 0, 0, 0.28),
+  0 0 5px 0 rgba(3, 150, 122, 0.45);
 
 // ------------------------------
 //           РАЗМЕРЫ
@@ -97,4 +107,3 @@ $transition-form: background-color 9999s ease-in-out 0s;
 // ------------------------------
 //           ШРИФТЫ
 // ------------------------------
-

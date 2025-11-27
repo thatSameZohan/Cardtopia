@@ -43,18 +43,14 @@ html {
 body {
   margin: 0;
 
-  background: radial-gradient(circle at center, transparent 0%, rgba(0, 0, 0, 0.25) 100%), var(--bg-main);
-  color: var(--color-light-800);
-
   font-family: 'Roboto', system-ui, sans-serif;
   font-weight: 400;
   line-height: 1.5;
-
+  max-height: 100vh;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  padding-top: 10vh; // Смещаем контент немного вниз
 }
 
 /* -----------------------------
@@ -107,10 +103,9 @@ h4,
 h5,
 h6 {
   margin: 0;
-  font-family: 'Roboto', sans-serif;  
+  font-family: 'Roboto', sans-serif;
   font-weight: 600;
   line-height: 1.2;
-  color: var(--color-light-900);
 }
 
 p {

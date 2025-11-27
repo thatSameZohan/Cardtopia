@@ -7,7 +7,6 @@ import { BossPanel } from '@/features/boss/ui/BossPanel';
 import { CardType } from '@/features/cards/model/card.schema';
 import { drawRandomCards, markCardsUsed } from '@/features/cards/lib/cards.helpers';
 import styles from './homepage.module.scss';
-import { registr } from '@/features/auth/model/auth';
 import { Button } from '@/shared/ui/Button';
 
 export const HomepageView = () => {
@@ -83,16 +82,7 @@ export const HomepageView = () => {
     }
   };
 
-  useEffect(() => {
-    // пример вызова регистрации
-    registr({
-      login: 'inna',
-      password: 'string',
-      authority: 'string',
-    })
-      .then((data) => console.log('Ответ сервера:', data))
-      .catch((err) => console.error('Ошибка:', err));
-  }, []);
+
 
   return (
     <DndProvider backend={HTML5Backend}>

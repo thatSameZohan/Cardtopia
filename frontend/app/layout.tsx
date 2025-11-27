@@ -1,9 +1,14 @@
 'use client';
+import 'react-toastify/dist/ReactToastify.css';
 import '@/app/styles/global.scss';
 import '@/app/styles/variables.scss';
 import '@/app/styles/normalize.css';
-
+import { Provider } from 'react-redux';
 import { type ReactNode } from 'react';
+import { ToastContainer } from 'react-toastify';
+import { store } from '@/redux/store';
+
+
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
@@ -14,8 +19,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet" />
       </head>
       <body>
-        <h1>Привет, мир!</h1>
-        {children}
+        <Provider store={store}>
+          {children}
+          <ToastContainer />
+        </Provider>
       </body>
     </html>
   );

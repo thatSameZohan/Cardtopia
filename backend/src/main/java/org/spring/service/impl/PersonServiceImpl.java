@@ -62,50 +62,58 @@ public class PersonServiceImpl implements PersonService {
         rtRepo.save(rt);
 
         ResponseCookie cookie = ResponseCookie.from("refresh_token", refresh)
-                .httpOnly(true).secure(false).path("/") // secure=true in production
+                .httpOnly(true).secure(true).path("/") // secure=true in production
                 .sameSite("Lax").maxAge(jwt.getRefreshMs()/1000)
                 .build();
 
-        return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, cookie.toString()).body(Map.of("accessToken", access, "userId", user.getId()));
+        return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, cookie.toString()).body(Map.of("token", access, "userId", user.getId()));
     }
 
     @Override
-    public ResponseEntity<?> refresh(String refresh) {
+    public ResponseEntity<?> refresh(@CookieValue(name = "refresh_token", required = false) String refresh) {
         if (refresh == null) {
-
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error","no cookie"));
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error","no refresh token in cookie"));
         }
         try {
             var parsed = jwt.parse(refresh);
-
             Long uid = Long.valueOf(parsed.getBody().getSubject());
 
             var db = rtRepo.findByToken(refresh).orElseThrow();
 
             if (db.getExpiresAt().isBefore(Instant.now())){
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error","expired"));
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error","refresh token expired"));
             }
 
             var user = personRepo.findById(uid).orElseThrow();
 
-            String access = jwt.createAccessToken(user.getId(), user.getLogin());
+            String newAccess = jwt.createAccessToken(user.getId(), user.getLogin());
+            String newRefresh = jwt.createRefreshToken(user.getId());
+            RefreshToken newRt = new RefreshToken(user.getId(), newRefresh, Instant.now().plusMillis(jwt.getRefreshMs()));
+            rtRepo.save(newRt);
+            rtRepo.deleteByToken(refresh); // Удаляем старый refresh token
 
-            return ResponseEntity.ok(Map.of("accessToken", access));
+            ResponseCookie cookie = ResponseCookie.from("refresh_token", newRefresh)
+                    .httpOnly(true).secure(true).path("/") // secure=true in production
+                    .sameSite("Lax").maxAge(jwt.getRefreshMs()/1000)
+                    .build();
+
+            return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, cookie.toString()).body(Map.of("token", newAccess));
 
         } catch (Exception e) {
-
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error","bad token"));
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error","bad refresh token"));
         }
     }
 
     @Override
-    public ResponseEntity<?> logout(String refresh) {
+    public ResponseEntity<?> logout(@CookieValue(name = "refresh_token", required = false) String refresh) {
         if (refresh != null) {
-
             rtRepo.deleteByToken(refresh);
         }
 
-        ResponseCookie cookie = ResponseCookie.from("refresh_token", "").httpOnly(true).secure(false).path("/").maxAge(0).build();
+        ResponseCookie cookie = ResponseCookie.from("refresh_token", "")
+                .httpOnly(true).secure(true).path("/")
+                .maxAge(0)
+                .build();
 
         return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, cookie.toString()).body(Map.of("ok",true));
     }
