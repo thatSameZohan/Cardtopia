@@ -8,8 +8,10 @@ import { CardType } from '@/features/cards/model/card.schema';
 import { drawRandomCards, markCardsUsed } from '@/features/cards/lib/cards.helpers';
 import styles from './homepage.module.scss';
 import { Button } from '@/shared/ui/Button';
+import { useRouter } from 'next/navigation';
 
 export const HomepageView = () => {
+  const router = useRouter();
   const initialCardsList: CardType[] = Array.from({ length: 30 }, (_, i) => ({
     id: i + 1,
     name: `Корабль ${i + 1}`,
@@ -82,6 +84,10 @@ export const HomepageView = () => {
     }
   };
 
+  const createGame = () => {
+    const gameId = Math.random().toString(36).substring(7);
+    router.push(`/game/${gameId}`);
+  };
 
 
   return (
@@ -92,6 +98,7 @@ export const HomepageView = () => {
         <DropZone cards={deck} onDrop={moveToDeck} title="Колода" />
         <DropZone cards={shopCards} onDrop={moveToDeck} title="Магазин" />
         <Button onClick={moveAllToTable}>Переместить карты</Button>
+        <Button onClick={createGame}>Создать игру</Button>
       </main>
     </DndProvider>
   );
