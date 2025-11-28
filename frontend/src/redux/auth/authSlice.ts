@@ -5,20 +5,23 @@ export interface AuthState {
   accessToken: string | null;
   isAuth: boolean;
   loading: boolean; // новое поле
+  userId: number | null;
 }
 
 const initialState: AuthState = {
   accessToken: null,
   isAuth: false,
   loading: true, // пока проверяем токен
+  userId: null,
 };
 
 const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
-    setTokens(state, action: PayloadAction<{ accessToken: string; refreshToken: string }>) {
+    setTokens(state, action: PayloadAction<{ accessToken: string; refreshToken: string; userId: number }>) {
       state.accessToken = action.payload.accessToken;
+      state.userId = action.payload.userId;
       Cookies.set('access_token', action.payload.accessToken, { expires: 7 }); // Добавляем сохранение access_token в куки
       Cookies.set('refresh_token', action.payload.refreshToken, { expires: 7 });
       state.isAuth = true;
@@ -26,6 +29,7 @@ const authSlice = createSlice({
     },
     logout(state, action: PayloadAction<{ noRedirect?: boolean } | undefined>) {
       state.accessToken = null;
+      state.userId = null;
       state.isAuth = false;
       state.loading = false;
       Cookies.remove('access_token'); // Удаляем access_token из куки

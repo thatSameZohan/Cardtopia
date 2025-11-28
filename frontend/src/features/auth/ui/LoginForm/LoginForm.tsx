@@ -34,7 +34,7 @@ export function LoginForm() {
       const result = await login({ login: formData.login, password: formData.password }).unwrap();
       router.push(routes.homepage);
     } catch (error) {
-      console.error('Ошибка входа:', error);
+      // Ошибка будет обработана в middleware
     }
   };
 
