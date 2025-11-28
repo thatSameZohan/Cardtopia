@@ -21,7 +21,7 @@ public class AppSecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http.authorizeHttpRequests(auth->
         {
-            auth.requestMatchers("/v1/api/auth/**").permitAll() // Разрешаем доступ к эндпоинтам аутентификации
+            auth.requestMatchers("/**").permitAll() // Разрешаем доступ ко всем запросам
                 .anyRequest().authenticated(); // Все остальные запросы требуют аутентификации
         })
 //                .formLogin(custom -> {
