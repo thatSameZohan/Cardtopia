@@ -9,6 +9,7 @@ import { drawRandomCards, markCardsUsed } from '@/features/cards/lib/cards.helpe
 import styles from './homepage.module.scss';
 import { Button } from '@/shared/ui/Button';
 import { useRouter } from 'next/navigation';
+import Chat from '@/features/chat/ui/Chat';
 
 export const HomepageView = () => {
   const router = useRouter();
@@ -99,6 +100,7 @@ export const HomepageView = () => {
         <DropZone cards={shopCards} onDrop={moveToDeck} title="Магазин" />
         <Button onClick={moveAllToTable}>Переместить карты</Button>
         <Button onClick={createGame}>Создать игру</Button>
+        <Chat />
       </main>
     </DndProvider>
   );
