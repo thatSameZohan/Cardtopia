@@ -5,9 +5,9 @@ import { LoginInput, RegisterInput } from '@/features/auth/model/auth';
 import { logout, setTokens } from './authSlice';
 
 export type RegisterResponse = object;
-export type LoginResponse = { accessToken: string; refresh_token: string; userId: number };
+export type LoginResponse = { accessToken: string; userId: number };
 
-export type RefreshTokenResponse = { token: string; refresh_token: string };
+export type RefreshTokenResponse = { token: string;};
 export type RefreshTokenInput = { refresh_token: string };
 
 export const authApi = api.injectEndpoints({
@@ -16,15 +16,20 @@ export const authApi = api.injectEndpoints({
     login: builder.mutation<LoginResponse, LoginInput>({
       query: (body) => ({
         url: apiPaths.auth.login,
+        credentials: 'include',
         method: 'POST',
         body,
       }),
       onQueryStarted: async (_, { dispatch, queryFulfilled, getCacheEntry }) => {
         try {
           const { data } = await queryFulfilled;
+          console.log("authApi.login.onQueryStarted", data);
           toast.success('Вы успешно вошли в систему');
           if (data) {
-            dispatch(setTokens({ accessToken: data.accessToken, refreshToken: data.refresh_token }));
+            dispatch(setTokens({
+              accessToken: data.accessToken,
+              userId: data.userId
+            }));
           }
         } catch (error) {
           dispatch(logout({ noRedirect: true }));
@@ -36,6 +41,7 @@ export const authApi = api.injectEndpoints({
       query: (body) => ({
         url: apiPaths.auth.register,
         method: 'POST',
+     credentials: 'include',
         body,
       }),
       onQueryStarted: async (_, { queryFulfilled }) => {
@@ -49,12 +55,31 @@ export const authApi = api.injectEndpoints({
     }),
     refreshToken: builder.mutation<RefreshTokenResponse, RefreshTokenInput>({
       query: (body) => ({
-        url: apiPaths.auth.refreshToken,
+        url: apiPaths.auth.refresh,
+        credentials: 'include',
         method: 'POST',
         body,
       }),
     }),
+    logout: builder.mutation<void, void>({
+      query: () => ({
+        url: apiPaths.auth.logout,
+         credentials: 'include',
+          method: 'POST',
+      }),
+      onQueryStarted: async (_, { dispatch, queryFulfilled }) => {
+        try {
+           const { data } = await queryFulfilled;
+          console.log('logout', data);
+
+          // dispatch(logout());
+        } catch (error) {
+        
+          // dispatch(logout());
+        }
+      },
+    }),
   }),
 });
 
-export const { useLoginMutation, useRegisterMutation, useRefreshTokenMutation } = authApi;
+export const { useLoginMutation, useRegisterMutation, useRefreshTokenMutation, useLogoutMutation } = authApi;

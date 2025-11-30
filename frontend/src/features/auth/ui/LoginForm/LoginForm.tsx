@@ -3,9 +3,6 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
-import { useSelector } from 'react-redux'; // Импортируем useSelector
-import { RootState } from '@/redux/store'; // Импортируем RootState
-
 import { type LoginInput, loginSchema } from 'features/auth/model/auth';
 import { routes } from 'shared/router/paths';
 import { FormInput, FormPassword } from 'shared/ui/Inputs';
@@ -31,10 +28,10 @@ export function LoginForm() {
 
   const submit = async (formData: LoginInput) => {
     try {
-      const result = await login({ login: formData.login, password: formData.password }).unwrap();
+       await login({ login: formData.login, password: formData.password }).unwrap();
       router.push(routes.homepage);
     } catch (error) {
-      // Ошибка будет обработана в middleware
+    
     }
   };
 

@@ -5,11 +5,11 @@ import { API_URL } from '@/shared/config/env';
 import { apiPaths } from '@/shared/config/api-paths';
 import { setTokens, logout } from '@/redux/auth/authSlice';
 import { RootState } from '@/redux/store';
-import Cookies from 'js-cookie'; // Добавляем импорт Cookies
+import Cookies from 'js-cookie';
 
 const baseQuery = fetchBaseQuery({
   baseUrl: `${API_URL}/v1/api`,
-  credentials: 'include', // Добавляем эту строку
+  credentials: 'include',
   prepareHeaders: (headers, { getState }) => {
     const token = (getState() as RootState).auth.accessToken;
     if (token && !headers.has('Authorization')) {
@@ -46,15 +46,14 @@ const baseQueryWithReauth: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQue
           {
             url: apiPaths.auth.refresh,
             method: 'POST',
-            // refreshToken отправляется в cookie, поэтому здесь его не передаем в body
           },
           api,
           extraOptions,
         );
 
         if (refreshResult.data) {
-          const { token, refresh_token } = refreshResult.data as { token: string; refresh_token: string };
-          api.dispatch(setTokens({ accessToken: token, refreshToken: refresh_token }));
+          const { accessToken, userId } = refreshResult.data as { accessToken: string; userId: number; };
+          api.dispatch(setTokens({ accessToken, userId }));
 
           result = await baseQuery(args, api, extraOptions);
         } else {
