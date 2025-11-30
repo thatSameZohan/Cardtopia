@@ -1,6 +1,7 @@
 package org.spring.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.spring.security.JwtUtil;
 import org.spring.model.PersonEntity;
 import org.spring.model.RefreshToken;
@@ -22,6 +23,7 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.util.Map;
 
+@Slf4j
 @RequiredArgsConstructor
 @Service
 public class PersonServiceImpl implements PersonService {
@@ -67,7 +69,7 @@ public class PersonServiceImpl implements PersonService {
                 .sameSite("Lax").maxAge(jwt.getRefreshMs()/1000)
                 .build();
 
-        return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, cookie.toString()).body(Map.of("token", access, "userId", user.getId()));
+        return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, cookie.toString()).body(Map.of("access_token", access, "userId", user.getId()));
     }
 
     @Override
@@ -98,7 +100,7 @@ public class PersonServiceImpl implements PersonService {
                     .sameSite("Lax").maxAge(jwt.getRefreshMs()/1000)
                     .build();
 
-            return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, cookie.toString()).body(Map.of("token", newAccess));
+            return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, cookie.toString()).body(Map.of("access_token", newAccess));
 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error","bad refresh token"));
@@ -115,7 +117,6 @@ public class PersonServiceImpl implements PersonService {
                 .httpOnly(true).secure(true).path("/")
                 .maxAge(0)
                 .build();
-
         return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, cookie.toString()).body(Map.of("ok",true));
     }
 }

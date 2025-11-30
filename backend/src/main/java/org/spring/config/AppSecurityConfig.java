@@ -3,7 +3,6 @@ package org.spring.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -19,8 +18,7 @@ public class AppSecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        return http.authorizeHttpRequests(auth->
-        {
+        return http.authorizeHttpRequests(auth-> {
             auth.requestMatchers("/**").permitAll() // Разрешаем доступ ко всем запросам
                 .anyRequest().authenticated(); // Все остальные запросы требуют аутентификации
         })
@@ -37,7 +35,7 @@ public class AppSecurityConfig {
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .csrf(AbstractHttpConfigurer::disable)
-                .cors(cors -> {}) // Включаем CORS с дефолтной конфигурацией
+                .cors(AbstractHttpConfigurer::disable)
         .build();
     }
 }
