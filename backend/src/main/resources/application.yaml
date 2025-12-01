@@ -2,7 +2,10 @@ spring:
   datasource:
     username: postgres.jfwbldocxafjzxhufaqm
     password: postgres
+    #    username: postgres
+    #    password: 5784
     driver-class-name: org.postgresql.Driver
+#    url: jdbc:postgresql://localhost:5432/cardtopia_db
     url: jdbc:postgresql://aws-1-eu-west-1.pooler.supabase.com:5432/postgres
   jpa:
     hibernate:
@@ -10,5 +13,5 @@ spring:
   port: 8080
 jwt:
   secret: afafa876saf876saf876as8sf6s87as6f7fas6fas78f6
-  access-ms: 600000 #10 min
-  refresh-ms: 86400000 #1 day
+  access-ms: 120000 #2 min
+  refresh-ms: 600000 #10 min

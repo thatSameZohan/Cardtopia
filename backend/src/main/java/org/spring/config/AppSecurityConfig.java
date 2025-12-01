@@ -8,8 +8,12 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.cors.CorsConfiguration;
+
+import java.util.List;
 
 @Configuration
+@EnableWebSecurity
 public class AppSecurityConfig {
 
     @Bean
@@ -19,25 +23,22 @@ public class AppSecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        return http.authorizeHttpRequests(auth->
-        {
-            auth.requestMatchers("/v1/api/auth/**").permitAll() // Разрешаем доступ к эндпоинтам аутентификации
-                .anyRequest().authenticated(); // Все остальные запросы требуют аутентификации
-        })
-//                .formLogin(custom -> {
-//                    custom  .usernameParameter("login")
-//                            .passwordParameter("password")
-//                            .loginProcessingUrl("/login")
-//                            .loginPage("/login");
-//                })
-//                .logout(custom -> {
-//                    custom  .invalidateHttpSession(true)
-//                            .logoutUrl("/logout");
-//                })
-                .formLogin(AbstractHttpConfigurer::disable)
-                .httpBasic(AbstractHttpConfigurer::disable)
-                .csrf(AbstractHttpConfigurer::disable)
-                .cors(cors -> {}) // Включаем CORS с дефолтной конфигурацией
-        .build();
+        return http
+            .cors(cors -> cors.configurationSource(request -> {
+                CorsConfiguration config = new CorsConfiguration();
+                config.setAllowedOrigins(List.of("http://localhost:3000")); // фронтенд
+                config.setAllowedMethods(List.of("GET","POST","PUT","DELETE","OPTIONS"));
+                config.setAllowedHeaders(List.of("*"));
+                config.setAllowCredentials(true);
+                return config;
+            }))
+            .csrf(AbstractHttpConfigurer::disable)
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/**").permitAll() // все эндпоинты разрешены
+                .anyRequest().authenticated()
+            )
+            .httpBasic(AbstractHttpConfigurer::disable)
+            .formLogin(AbstractHttpConfigurer::disable)
+            .build();
     }
 }
