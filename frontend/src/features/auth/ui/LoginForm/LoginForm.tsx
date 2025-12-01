@@ -36,11 +36,11 @@ export function LoginForm() {
   };
 
   return (
-    <AuthWrapper title="Вход в аккаунт" subtitle="Введите email и пароль для входа">
+    <AuthWrapper title="Вход в аккаунт" subtitle="Введите логин и пароль для входа">
       <form onSubmit={handleSubmit(submit)}>
-        <FormInput control={control} name="login" label="Email" placeholder="you@example.com" />
-        <FormPassword control={control} name="password" label="Пароль" placeholder="••••••••" />
-        <Button loading={isSubmitting} disabled={!isDirty || !isValid} fullWidth variant="glow">
+        <FormInput control={control} name="login" label="Логин" placeholder="you@example.com" />
+        <FormPassword control={control} name="password" label="Пароль" placeholder="Введите пароль" />
+        <Button loading={isSubmitting}  fullWidth variant="glow">
           Войти
         </Button>
         <div className={styles.linksContainer}>

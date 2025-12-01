@@ -44,9 +44,8 @@ export function RegisterForm() {
   return (
     <AuthWrapper title="Регистрация" subtitle="Создайте новый аккаунт">
       <form onSubmit={handleSubmit(submit)}>
-        {/* <FormInput required control={control} name="name" label="Имя" placeholder="Ваше имя" /> */}
-        <FormInput required control={control} name="login" label="Email" placeholder="you@example.com" />
-        <FormPassword required control={control} name="password" label="Пароль" placeholder="••••••••" />
+        <FormInput required control={control} name="login" label="Логин" placeholder="Введите логин" />
+        <FormPassword required control={control} name="password" label="Пароль" placeholder="Введите пароль" />
 
         <Controller
           name="agreeToTerms"
