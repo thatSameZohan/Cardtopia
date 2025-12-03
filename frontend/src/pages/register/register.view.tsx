@@ -1,5 +1,5 @@
 import { RegisterForm } from '@/features/auth';
 
-export function RegistrView() {
+export function RegisterView() {
   return <RegisterForm />;
 }

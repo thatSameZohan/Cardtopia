@@ -5,7 +5,7 @@ import { LoginInput, RegisterInput } from '@/features/auth/model/auth';
 import { logout, setTokens } from './authSlice';
 
 export type RegisterResponse = object;
-export type LoginResponse = { accessToken: string; userId: number };
+export type LoginResponse = { access_token: string; userId: number; };
 
 export type RefreshTokenResponse = { token: string;};
 export type RefreshTokenInput = { refresh_token: string };
@@ -27,8 +27,7 @@ export const authApi = api.injectEndpoints({
           toast.success('Вы успешно вошли в систему');
           if (data) {
             dispatch(setTokens({
-              accessToken: data.accessToken,
-              userId: data.userId
+              accessToken: data.access_token,
             }));
           }
         } catch (error) {
@@ -72,10 +71,10 @@ export const authApi = api.injectEndpoints({
            const { data } = await queryFulfilled;
           console.log('logout', data);
 
-          // dispatch(logout());
+           dispatch(logout());
         } catch (error) {
         
-          // dispatch(logout());
+           dispatch(logout());
         }
       },
     }),

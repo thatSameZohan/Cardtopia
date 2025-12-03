@@ -8,7 +8,6 @@ import { type RegisterInput, registerSchema } from '@/features/auth/model/auth';
 import { routes } from '@/shared/router/paths';
 import { FormInput, FormPassword } from '@/shared/ui/Inputs';
 import { Button } from '@/shared/ui/Button';
-import { Checkbox } from '@/shared/ui/Checkbox';
 import { AuthWrapper } from '@/shared/ui/AuthWrapper';
 import styles from '@/shared/ui/AuthWrapper/AuthWrapper.module.scss';
 
@@ -28,7 +27,7 @@ export function RegisterForm() {
     formState: { isSubmitting, isDirty, isValid },
   } = useForm<RegisterInput>({
     resolver: zodResolver(registerSchema),
-    defaultValues: { login: '', password: '',agreeToTerms: false },
+    defaultValues: { login: '', password: '' },
   });
 
 
@@ -46,25 +45,6 @@ export function RegisterForm() {
       <form onSubmit={handleSubmit(submit)}>
         <FormInput required control={control} name="login" label="Логин" placeholder="Введите логин" />
         <FormPassword required control={control} name="password" label="Пароль" placeholder="Введите пароль" />
-
-        <Controller
-          name="agreeToTerms"
-          control={control}
-          render={({ field, fieldState: { error } }) => (
-            <Checkbox
-              ref={field.ref}
-              name={field.name}
-              onBlur={field.onBlur}
-              label="Я согласен с условиями использования"
-              checked={field.value}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                field.onChange(e.target.checked);
-              }}
-              error={error?.message}
-            />
-          )}
-        />
-
         <Button fullWidth type="submit" loading={isSubmitting} disabled={!isDirty || !isValid} variant="glow">
           Зарегистрироваться
         </Button>

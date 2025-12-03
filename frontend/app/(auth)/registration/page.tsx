@@ -1,6 +1,6 @@
 import { type Metadata } from 'next';
 
-import { RegistrView } from 'pages/registr';
+import { RegisterView } from '@/pages/register';
 import { getMetadata } from 'shared/lib/metadata';
 import { routes } from 'shared/router/paths';
 
@@ -13,5 +13,5 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function Login() {
-  return <RegistrView />;
+  return <RegisterView />;
 }

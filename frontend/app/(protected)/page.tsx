@@ -1,13 +1,10 @@
-
-import { type Metadata } from 'next/types';
-import { HomepageView } from '@/pages/homepage';
-
-
+import { AuthFlowTest } from "@/features/auth/ui/AuthFlowTest";
+import { type Metadata } from "next/types";
 
 export async function generateMetadata(): Promise<Metadata> {
-  return { title: 'Homepage' };
+  return { title: "Auth Test" };
 }
 
-export default async function Homepage() {
-  return <HomepageView /> 
+export default function AuthTestPage() {
+  return <AuthFlowTest />;
 }

@@ -32,9 +32,8 @@ const baseQueryWithReauth: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQue
 
   if (result.error && result.meta?.response?.status === 401) {
     console.warn('Получен 401 Unauthorized, попытка обновления токена...');
-    const refreshToken = Cookies.get('refresh_token'); // Получаем refreshToken из cookie
+    const refreshToken = Cookies.get('refresh_token'); 
     if (!refreshToken) {
-      console.error('RefreshToken отсутствует, перенаправление на страницу входа.');
       api.dispatch(logout({ noRedirect: true }));
       return result;
     }
@@ -52,12 +51,11 @@ const baseQueryWithReauth: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQue
         );
 
         if (refreshResult.data) {
-          const { accessToken, userId } = refreshResult.data as { accessToken: string; userId: number; };
-          api.dispatch(setTokens({ accessToken, userId }));
+          const { access_token, userId } = refreshResult.data as { access_token: string; userId: number; };
+          api.dispatch(setTokens({ accessToken: access_token, userId }));
 
           result = await baseQuery(args, api, extraOptions);
         } else {
-          console.error('Ошибка при обновлении RefreshToken, перенаправление на страницу входа.');
           api.dispatch(logout({ noRedirect: true }));
         }
       } finally {
@@ -74,5 +72,11 @@ const baseQueryWithReauth: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQue
 
 export const api = createApi({
   baseQuery: baseQueryWithReauth,
-  endpoints: () => ({}),
+  endpoints: (builder) => ({
+    getMe: builder.query<any, void>({
+      query: () => '/me',
+    }),
+  }),
 });
+
+export const { useGetMeQuery, useLazyGetMeQuery } = api;
