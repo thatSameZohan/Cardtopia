@@ -8,6 +8,5 @@ import lombok.*;
 public class ErrorDto {
 
     private Integer code;
-
-    private String details;
+    private String message;
 }
