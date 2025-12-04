@@ -1,14 +1,13 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { routes } from '@/shared/router/paths';
+import { ProtectedClientWrapper } from '@/shared/ui/ProtectedClientWrapper';
 
-export default async function Template({ children }: { children: React.ReactNode }) {
-  const cookieStore = cookies();
-  const token = (await cookieStore).get('token');
+export default async function ProtectedTemplate({ children }: { children: React.ReactNode }) {
+  const cookieStore = await cookies();
+  const refreshToken = cookieStore.get('refresh_token'); // проверяем SSR cookie
 
-  if (!token) {
-    redirect(routes.login);
-  }
+  if (!refreshToken) redirect(routes.login);
 
-  return <>{children}</>;
+  return <ProtectedClientWrapper>{children}</ProtectedClientWrapper>;
 }

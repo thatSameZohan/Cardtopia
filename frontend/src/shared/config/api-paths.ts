@@ -4,7 +4,7 @@ export const apiPaths = {
     register: '/auth/register',
     refresh: '/auth/refresh',
     logout: '/auth/logout',
-    refreshToken:'/auth/refresh'
+    refreshToken: '/auth/refresh',
   },
   // ... другие пути
 };

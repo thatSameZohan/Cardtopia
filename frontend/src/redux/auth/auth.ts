@@ -5,9 +5,9 @@ import { LoginInput, RegisterInput } from '@/features/auth/model/auth';
 import { logout, setTokens } from './authSlice';
 
 export type RegisterResponse = object;
-export type LoginResponse = { access_token: string; userId: number; };
+export type LoginResponse = { accessToken: string; userId: number };
 
-export type RefreshTokenResponse = { token: string;};
+export type RefreshTokenResponse = { token: string };
 export type RefreshTokenInput = { refresh_token: string };
 
 export const authApi = api.injectEndpoints({
@@ -23,12 +23,13 @@ export const authApi = api.injectEndpoints({
       onQueryStarted: async (_, { dispatch, queryFulfilled, getCacheEntry }) => {
         try {
           const { data } = await queryFulfilled;
-          console.log("authApi.login.onQueryStarted", data);
           toast.success('Вы успешно вошли в систему');
           if (data) {
-            dispatch(setTokens({
-              accessToken: data.access_token,
-            }));
+            dispatch(
+              setTokens({
+                accessToken: data.accessToken,
+              }),
+            );
           }
         } catch (error) {
           dispatch(logout({ noRedirect: true }));
@@ -40,41 +41,47 @@ export const authApi = api.injectEndpoints({
       query: (body) => ({
         url: apiPaths.auth.register,
         method: 'POST',
-     credentials: 'include',
+        credentials: 'include',
         body,
       }),
       onQueryStarted: async (_, { queryFulfilled }) => {
         try {
           await queryFulfilled;
           toast.success('Вы успешно зарегистрировались');
-        } catch (error) {
-          // Ошибка будет обработана в middleware
-        }
+        } catch (error) {}
       },
     }),
-    refreshToken: builder.mutation<RefreshTokenResponse, RefreshTokenInput>({
-      query: (body) => ({
+    refreshToken: builder.mutation<LoginResponse, void>({
+      query: () => ({
         url: apiPaths.auth.refresh,
         credentials: 'include',
         method: 'POST',
-        body,
       }),
+      onQueryStarted: async (_, { dispatch, queryFulfilled }) => {
+        try {
+          const { data } = await queryFulfilled;
+          if (data) {
+            dispatch(setTokens({ accessToken: data.accessToken }));
+            const meData = await dispatch(api.endpoints.getMe.initiate()).unwrap();
+            dispatch(setTokens({ accessToken: data.accessToken, username: meData.username }));
+          }
+        } catch (error) {
+          dispatch(logout({ noRedirect: true }));
+        }
+      },
     }),
     logout: builder.mutation<void, void>({
       query: () => ({
         url: apiPaths.auth.logout,
-         credentials: 'include',
-          method: 'POST',
+        credentials: 'include',
+        method: 'POST',
       }),
       onQueryStarted: async (_, { dispatch, queryFulfilled }) => {
         try {
-           const { data } = await queryFulfilled;
-          console.log('logout', data);
-
-           dispatch(logout());
+          await queryFulfilled;
+          dispatch(logout());
         } catch (error) {
-        
-           dispatch(logout());
+          dispatch(logout());
         }
       },
     }),

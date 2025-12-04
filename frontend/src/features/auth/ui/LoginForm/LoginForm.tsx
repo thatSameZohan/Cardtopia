@@ -10,37 +10,34 @@ import { Button } from '@/shared/ui/Button';
 import { AuthWrapper } from '@/shared/ui/AuthWrapper';
 import styles from '@/shared/ui/AuthWrapper/AuthWrapper.module.scss';
 import { useLoginMutation } from '@/redux/auth/auth';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 export function LoginForm() {
-
-  const [login] = useLoginMutation();
+  const [login, { isLoading }] = useLoginMutation();
   const router = useRouter();
-  const {
-    handleSubmit,
-    control,
-    formState: { isSubmitting, isDirty, isValid },
-  } = useForm<LoginInput>({
+  const searchParams = useSearchParams();
+  const { handleSubmit, control } = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { login: '', password: '' },
+    defaultValues: { username: '', password: '' },
   });
-
 
   const submit = async (formData: LoginInput) => {
     try {
-       await login({ login: formData.login, password: formData.password }).unwrap();
+      await login({ username: formData.username, password: formData.password }).unwrap();
+      // const returnTo = searchParams.get('returnTo');
+      //  router.push(returnTo || routes.homepage);
       router.push(routes.homepage);
     } catch (error) {
-    
+      // Ошибка обработается в RTK Query
     }
   };
 
   return (
     <AuthWrapper title="Вход в аккаунт" subtitle="Введите логин и пароль для входа">
       <form onSubmit={handleSubmit(submit)}>
-        <FormInput control={control} name="login" label="Логин" placeholder="you@example.com" />
+        <FormInput control={control} name="username" label="Логин" placeholder="you@example.com" />
         <FormPassword control={control} name="password" label="Пароль" placeholder="Введите пароль" />
-        <Button loading={isSubmitting}  fullWidth variant="glow">
+        <Button loading={isLoading} fullWidth variant="glow">
           Войти
         </Button>
         <div className={styles.linksContainer}>

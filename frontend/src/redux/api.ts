@@ -5,7 +5,6 @@ import { API_URL } from '@/shared/config/env';
 import { apiPaths } from '@/shared/config/api-paths';
 import { setTokens, logout } from '@/redux/auth/authSlice';
 import { RootState } from '@/redux/store';
-import Cookies from 'js-cookie';
 
 const baseQuery = fetchBaseQuery({
   baseUrl: `${API_URL}/v1/api`,
@@ -30,33 +29,27 @@ const baseQueryWithReauth: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQue
 
   let result = await baseQuery(args, api, extraOptions);
 
-  if (result.error && result.meta?.response?.status === 401) {
-    console.warn('Получен 401 Unauthorized, попытка обновления токена...');
-    const refreshToken = Cookies.get('refresh_token'); 
-    if (!refreshToken) {
-      api.dispatch(logout({ noRedirect: true }));
+  if (result.error?.status === 401) {
+    const requestUrl = typeof args === 'string' ? args : args.url;
+    const isRefreshRequest = requestUrl === apiPaths.auth.refresh;
+
+    if (isRefreshRequest) {
+      api.dispatch(logout());
       return result;
     }
 
     if (!mutex.isLocked()) {
       const release = await mutex.acquire();
       try {
-        const refreshResult = await baseQuery(
-          {
-            url: apiPaths.auth.refresh,
-            method: 'POST',
-          },
-          api,
-          extraOptions,
-        );
+        const refreshRes = await baseQuery({ url: apiPaths.auth.refresh, method: 'POST' }, api, extraOptions);
 
-        if (refreshResult.data) {
-          const { access_token, userId } = refreshResult.data as { access_token: string; userId: number; };
-          api.dispatch(setTokens({ accessToken: access_token, userId }));
+        if (refreshRes.data) {
+          const { accessToken } = refreshRes.data as { accessToken: string };
+          api.dispatch(setTokens({ accessToken }));
 
           result = await baseQuery(args, api, extraOptions);
         } else {
-          api.dispatch(logout({ noRedirect: true }));
+          api.dispatch(logout());
         }
       } finally {
         release();
@@ -65,6 +58,9 @@ const baseQueryWithReauth: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQue
       await mutex.waitForUnlock();
       result = await baseQuery(args, api, extraOptions);
     }
+  }
+
+  if (result.error?.status === 403) {
   }
 
   return result;

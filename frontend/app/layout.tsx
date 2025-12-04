@@ -8,8 +8,6 @@ import { type ReactNode } from 'react';
 import { ToastContainer } from 'react-toastify';
 import { store } from '@/redux/store';
 
-
-
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
