@@ -1,8 +1,13 @@
 package org.spring.web;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.spring.dto.ErrorDto;
 import org.spring.exc.UserCommonException;
 import org.spring.model.PersonEntity;
 import org.spring.model.RefreshToken;
@@ -31,6 +36,24 @@ public class AuthController {
     record RegisterRequest(String username, String password) {}
 
     @PostMapping("/register")
+    @Operation(summary = "register user",
+            responses = {
+                    @ApiResponse(
+                            description = "Пользователь зарегистрирован",
+                            responseCode = "201",
+                            content = @Content()
+                    ),
+                    @ApiResponse(
+                            description = "Пользователь уже существует",
+                            responseCode = "409",
+                            content = @Content(schema = @Schema(implementation = ErrorDto.class))
+                    ),
+                    @ApiResponse(
+                            description = "Неизвестная ошибка",
+                            responseCode = "500",
+                            content = @Content()
+                    )
+            })
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest req) {
         if (personRepository.existsByUsername(req.username())) {
             throw new UserCommonException(409,"Пользователь уже существует");
