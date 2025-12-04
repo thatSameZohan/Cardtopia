@@ -19,7 +19,7 @@ public class JpaUserDetailsService implements UserDetailsService {
         PersonEntity person = personRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
 
-        return org.springframework.security.core.userdetails.User.builder()
+        return User.builder()
                 .username(person.getUsername())
                 .password(person.getPassword())
                 .authorities(person.getRoles().stream().map(r -> "ROLE_" + r).toArray(String[]::new))
