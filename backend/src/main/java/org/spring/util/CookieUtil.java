@@ -9,7 +9,7 @@ public class CookieUtil {
         Cookie cookie = new Cookie("refresh_token", token);
         cookie.setHttpOnly(true); // true-кука недоступна из JavaScript на стороне клиента, повышает безопасность
         cookie.setSecure(false);       // true-кука будет передаваться только по HTTPS
-        cookie.setPath("/api/auth/refresh"); // кука отправляется только сюда
+        cookie.setPath("/"); // кука отправляется только сюда
         cookie.setMaxAge(60 * 60 * 24 * 1); // время жизни куки 1 день
         cookie.setDomain("localhost"); //  домен, для которого действительна кука
         cookie.setAttribute("SameSite", "Lax");

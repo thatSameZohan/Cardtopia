@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: jdbc:postgresql://aws-1-eu-west-1.pooler.supabase.com:5432/postgres
+    url: jdbc:postgresql://aws-1-eu-west-1.pooler.supabase.com:5432/postgres?sslmode=require
     username: postgres.jfwbldocxafjzxhufaqm
-    password: postgres
+    password: postgres5784
 #    url: jdbc:postgresql://localhost:5432/cardtopia_db
 #    username: postgres
 #    password: 5784
@@ -10,6 +10,9 @@ spring:
   jpa:
     hibernate:
       ddl-auto: none
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
   port: 8080
 jwt:
   secret: afafa876saf876saf876as8sf6s87as6f7fas6fas78f6

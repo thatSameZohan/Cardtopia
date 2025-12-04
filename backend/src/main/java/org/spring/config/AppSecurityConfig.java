@@ -53,9 +53,9 @@ public class AppSecurityConfig {
                 }))
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/**").permitAll()
                         .requestMatchers("/v1/api/me").authenticated()
-                        .requestMatchers("/swagger-ui/**").permitAll()
-                        .anyRequest().permitAll()
+                        .anyRequest().authenticated()
                 )
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
