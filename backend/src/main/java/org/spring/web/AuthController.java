@@ -28,7 +28,7 @@ public class AuthController {
     private final JwtService jwtService;
     private final RefreshTokenService refreshTokenService;
 
-    record RegisterRequest(String username, String email, String password) {}
+    record RegisterRequest(String username, String password) {}
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest req) {

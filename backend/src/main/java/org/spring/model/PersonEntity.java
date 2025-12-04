@@ -8,7 +8,7 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter @Setter
-@Entity
+@Entity @Builder
 @Table(name = "persons")
 public class PersonEntity {
     @Id
