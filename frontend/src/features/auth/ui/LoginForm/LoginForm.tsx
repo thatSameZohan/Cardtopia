@@ -35,7 +35,7 @@ export function LoginForm() {
   return (
     <AuthWrapper title="Вход в аккаунт" subtitle="Введите логин и пароль для входа">
       <form onSubmit={handleSubmit(submit)}>
-        <FormInput control={control} name="username" label="Логин" placeholder="you@example.com" />
+        <FormInput control={control} type="text" name="username" label="Логин" placeholder="Введите логин" />
         <FormPassword control={control} name="password" label="Пароль" placeholder="Введите пароль" />
         <Button loading={isLoading} fullWidth variant="glow">
           Войти
