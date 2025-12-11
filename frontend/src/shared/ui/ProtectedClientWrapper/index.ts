@@ -1,0 +1,1 @@
+export { ProtectedClientWrapper } from './ProtectedClientWrapper';

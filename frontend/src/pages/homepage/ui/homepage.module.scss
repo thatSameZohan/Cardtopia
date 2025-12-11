@@ -1,0 +1,16 @@
+@use 'variables' as *;
+
+.main {
+  width: 100%;
+  height: 100%;
+  background: $bg-glow-gradient;
+  backdrop-filter: blur(12px);
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.text {
+  color: $color-light-800;
+  font-size: 24px;
+}

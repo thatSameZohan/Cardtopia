@@ -1,0 +1,20 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://aws-1-eu-west-1.pooler.supabase.com:5432/postgres?sslmode=require
+    username: postgres.jfwbldocxafjzxhufaqm
+    password: postgres5784
+#    url: jdbc:postgresql://localhost:5432/cardtopia_db
+#    username: postgres
+#    password: 5784
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  port: 8080
+jwt:
+  secret: afafa876saf876saf876as8sf6s87as6f7fas6fas78f6
+  access-ms: 120000 #2 min
+  refresh-ms: 600000 #10 min

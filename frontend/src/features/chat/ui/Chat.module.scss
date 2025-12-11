@@ -1,0 +1,189 @@
+/* Основной контейнер чата */
+.chat_window {
+  --chat-bg: #1a1a1d;
+  --header-bg: #2c2c34;
+  --primary-text: #f0f0f0;
+  --secondary-text: #a0a0a0;
+  --accent-color: #6c63ff;
+  --accent-hover: #5a52d6;
+  --message-bg-own: #4a4e69;
+  --message-bg-other: #3a3b43;
+  --border-color: #40404a;
+  --success-color: #57f287;
+  --error-color: #ed4245;
+
+  display: flex;
+  flex-direction: column;
+  height: 60%;
+  background-color: var(--chat-bg);
+  color: var(--primary-text);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  margin-top: auto;
+  width: clamp(300px, 50%, 500px);
+}
+
+/* --- ХЕДЕР ОКНА ЧАТА --- */
+.header {
+  padding: 15px 20px;
+  background-color: var(--header-bg);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+
+  &_title {
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin: 0;
+  }
+
+  &_status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    color: var(--secondary-text);
+  }
+
+  &_statusDot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    transition: background-color 0.3s ease;
+  }
+}
+
+/* --- КОНТЕЙНЕР ДЛЯ СООБЩЕНИЙ --- */
+.messages_container {
+  flex-grow: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+
+  /* Стилизация скроллбара */
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: var(--border-color);
+    border-radius: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background-color: #555;
+  }
+}
+
+/* --- СТИЛИ СООБЩЕНИЙ --- */
+.message {
+  display: flex;
+  max-width: 75%;
+
+  &_bubble {
+    padding: 10px 15px;
+    border-radius: 18px;
+    color: var(--primary-text);
+    line-height: 1.4;
+    word-wrap: break-word;
+  }
+
+  &_sender {
+    font-weight: 600;
+    font-size: 0.85rem;
+    margin-bottom: 5px;
+    color: var(--accent-color);
+  }
+
+  &_text {
+    margin: 0;
+  }
+
+  /* Сообщения текущего пользователя */
+  &_own {
+    align-self: flex-end;
+    .message_bubble {
+      background-color: var(--message-bg-own);
+      border-bottom-right-radius: 4px;
+    }
+  }
+
+  /* Сообщения других пользователей */
+  &_other {
+    align-self: flex-start;
+    .message_bubble {
+      background-color: var(--message-bg-other);
+      border-bottom-left-radius: 4px;
+    }
+  }
+}
+
+/* --- ПОЛЕ ВВОДА --- */
+.input_area {
+  display: flex;
+  gap: 10px;
+  padding: 20px;
+  border-top: 1px solid var(--border-color);
+  background-color: var(--header-bg);
+  flex-shrink: 0;
+
+  input {
+    flex-grow: 1;
+    background-color: var(--chat-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    padding: 10px 18px;
+    color: var(--primary-text);
+    font-size: 1rem;
+    outline: none;
+    transition:
+      border-color 0.2s,
+      box-shadow 0.2s;
+
+    &:focus {
+      border-color: var(--accent-color);
+      box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.2);
+    }
+  }
+
+  button {
+    background-color: var(--accent-color);
+    border: none;
+    border-radius: 50%;
+    color: white;
+    font-size: 1.2rem;
+    width: 44px;
+    height: 44px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition:
+      background-color 0.2s,
+      transform 0.1s;
+
+    &:hover {
+      background-color: var(--accent-hover);
+    }
+
+    &:disabled {
+      background-color: #555;
+      cursor: not-allowed;
+      transform: scale(1);
+    }
+
+    &:active:not(:disabled) {
+      transform: scale(0.95);
+    }
+  }
+}
