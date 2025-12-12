@@ -37,7 +37,7 @@ public class ChatController {
     private final Map<String, Room> roomStore = new ConcurrentHashMap<>();
     private final Map<String, String> sessionToRoomMap = new ConcurrentHashMap<>(); // sessionId -> roomId
     private static final Pattern roomTopicPattern = Pattern.compile("/topic/room/(.+)");
-
+ 
     public ChatController(SimpMessagingTemplate messagingTemplate, ObjectMapper objectMapper) {
         this.messagingTemplate = messagingTemplate;
         this.objectMapper = objectMapper;
@@ -63,6 +63,10 @@ public class ChatController {
         public boolean isFull() { return participants.size() >= 2; }
         public void addParticipant(String sessionId) { participants.add(sessionId); }
         public void removeParticipant(String sessionId) { participants.remove(sessionId); }
+
+ public Set<String> getParticipants() {
+        return participants;
+    }
 
         @Override
         public String toString() {
@@ -109,13 +113,15 @@ public Message sendGlobal(Message message) {
 public Room addRoom(@Payload String roomName, StompHeaderAccessor headerAccessor) {
     Room newRoom = new Room(UUID.randomUUID().toString(), roomName);
     roomStore.put(newRoom.getId(), newRoom);
-    // автоматически добавляем создателя в комнату
-    String sessionId = headerAccessor.getSessionId();
-    if (sessionId != null) {
-        newRoom.addParticipant(sessionId);
-        sessionToRoomMap.put(sessionId, newRoom.getId());
-    }
-    broadcastUpdatedRooms(); // уведомляем всех о новой комнате
+    //автоматически добавляем создателя в комнату
+    // я хуи знаю как но нужно сделать так что бы создатель номнаты сразу заходил в нее
+    //без этого работает но не уверен что верно так как регистрируюсь я при входе
+    // String sessionId = headerAccessor.getSessionId();
+    // if (sessionId != null) {
+    //  newRoom.addParticipant(sessionId);
+    //     sessionToRoomMap.put(sessionId, newRoom.getId());
+    // }
+     broadcastUpdatedRooms(); // уведомляем всех о новой комнате
     return newRoom; // комната возвращается создателю
 }
 
@@ -140,28 +146,45 @@ public Room addRoom(@Payload String roomName, StompHeaderAccessor headerAccessor
         return roomStore.values();
     }
 
-    @EventListener
-    public void handleSessionSubscribe(SessionSubscribeEvent event) {
-        StompHeaderAccessor headerAccessor = StompHeaderAccessor.wrap(event.getMessage());
-        String destination = headerAccessor.getDestination();
-        if (destination == null) return;
+   @EventListener
+public void handleSessionSubscribe(SessionSubscribeEvent event) {
+    StompHeaderAccessor headerAccessor = StompHeaderAccessor.wrap(event.getMessage());
+    String destination = headerAccessor.getDestination();
+    if (destination == null) return;
 
-        Matcher matcher = roomTopicPattern.matcher(destination);
-        if (matcher.matches()) {
-            String roomId = matcher.group(1);
-            String sessionId = headerAccessor.getSessionId();
-            Room room = roomStore.get(roomId);
+    Matcher matcher = roomTopicPattern.matcher(destination);
+    if (!matcher.matches()) return;
 
-            if (room != null && sessionId != null && !room.isFull()) {
-                room.addParticipant(sessionId);
-                sessionToRoomMap.put(sessionId, roomId);
-                log.info("Session {} subscribed to room {}. Participants: {}", sessionId, roomId, room.getParticipantsCount());
-                broadcastUpdatedRooms();
-            } else {
-                log.warn("Could not subscribe session {} to room {}", sessionId, roomId);
-            }
-        }
+    String roomId = matcher.group(1);
+    String sessionId = headerAccessor.getSessionId();
+    Room room = roomStore.get(roomId);
+
+    if (room == null || sessionId == null) {
+        log.warn("Subscribe failed: room or session is null. roomId={}, sessionId={}", roomId, sessionId);
+        return;
     }
+
+    // 🔥 Новая проверка — участник не должен быть добавлен дважды
+    if (room.getParticipants().contains(sessionId)) {
+        log.info("Session {} already in room {}, skip adding.", sessionId, roomId);
+        return;
+    }
+
+    // Проверка на заполненность комнаты
+    if (room.isFull()) {
+        log.warn("Room {} is full. Session {} cannot join.", roomId, sessionId);
+        return;
+    }
+
+    // Добавляем игрока
+    room.addParticipant(sessionId);
+    sessionToRoomMap.put(sessionId, roomId);
+
+    log.info("Session {} subscribed to room {}. Participants: {}", 
+            sessionId, roomId, room.getParticipantsCount());
+
+    broadcastUpdatedRooms();
+}
 
     @EventListener
     public void handleSessionDisconnect(SessionDisconnectEvent event) {
@@ -169,19 +192,6 @@ public Room addRoom(@Payload String roomName, StompHeaderAccessor headerAccessor
         handleLeave(sessionId);
     }
 
-    private void handleLeave(String sessionId) {
-        if (sessionId == null) return;
-
-        String roomId = sessionToRoomMap.remove(sessionId);
-        if (roomId != null) {
-            Room room = roomStore.get(roomId);
-            if (room != null) {
-                room.removeParticipant(sessionId);
-                log.info("Session {} left room {}. Participants: {}", sessionId, roomId, room.getParticipantsCount());
-                broadcastUpdatedRooms();
-            }
-        }
-    }
 
     private void broadcastUpdatedRooms() {
         Collection<Room> rooms = roomStore.values();
@@ -193,6 +203,7 @@ public Room addRoom(@Payload String roomName, StompHeaderAccessor headerAccessor
         }
         messagingTemplate.convertAndSend("/topic/rooms", rooms);
     }
+
     private void handleLeave(String sessionId) {
     if (sessionId == null) return;
 

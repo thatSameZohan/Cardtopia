@@ -1,3 +1,4 @@
+import { Room } from '@/features/gameLobby/hook/useRooms';
 import { useWSContext } from '@/shared/ui/WSProvider/WSProvider';
 import { StompSubscription } from '@stomp/stompjs';
 import { useRef, useEffect, useState, useCallback } from 'react';
@@ -14,13 +15,14 @@ export const useGameRoom = (roomId: string) => {
   const infoSub = useRef<StompSubscription | null>(null);
 
   const [messages, setMessages] = useState<GameMessage[]>([]);
-  const [roomInfo, setRoomInfo] = useState<any>(null);
+  const [roomInfo, setRoomInfo] = useState<Room | null>(null);
 
   // подписка на игровые события
   useEffect(() => {
     if (!connected) return;
 
     roomSub.current?.unsubscribe();
+
     roomSub.current = subscribe(`/topic/room/${roomId}`, (msg) => {
       try {
         const parsed = JSON.parse(msg.body);
@@ -29,7 +31,6 @@ export const useGameRoom = (roomId: string) => {
         console.error('Invalid game message:', msg.body);
       }
     });
-
     return () => roomSub.current?.unsubscribe();
   }, [connected, roomId]);
 

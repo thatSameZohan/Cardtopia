@@ -16,8 +16,8 @@ export const HomepageView = () => {
       <div className={styles.text}>
         {isAuth ? `Привет, ${username}!` : 'Привет, гость 👋'}
       </div>
-      <Chat />
       <RoomList />
+      <Chat />
     </main>
   );
 };

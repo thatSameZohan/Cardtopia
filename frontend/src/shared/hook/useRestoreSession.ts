@@ -30,16 +30,18 @@ export function useRestoreSession() {
 
             // После успешного обновления accessToken повторно вызываем /me
             const meResult = await getMe().unwrap();
-            dispatch(setTokens({ accessToken: refreshRes.accessToken, username: meResult.username }));
+            dispatch(
+              setTokens({
+                accessToken: refreshRes.accessToken,
+                username: meResult.username,
+              }),
+            );
           } catch (refreshErr: any) {
             // Если refresh не удался или пришёл 440 → полный logout
-            console.log('я тут');
             dispatch(logout());
             toast.error('Ваша сессия истекла, пожалуйста, войдите снова');
             router.push(routes.login);
           }
-        } else {
-          console.log('Ошибка при восстановлении сессии:', err);
         }
       }
     })();

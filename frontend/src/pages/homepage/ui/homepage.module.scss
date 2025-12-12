@@ -6,11 +6,17 @@
   background: $bg-glow-gradient;
   backdrop-filter: blur(12px);
   padding: 20px;
-  display: flex;
+
   justify-content: space-between;
+  display: grid;
+  gap: 20px;
+  grid-template-columns: 1fr 350px;
+  grid-template-rows: 50px 1fr;
 }
 
 .text {
   color: $color-light-800;
   font-size: 24px;
+  grid-column: span 2;
+  margin: 0 auto;
 }
