@@ -1,4 +1,4 @@
-package org.spring.web;
+package org.spring.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.spring.dto.AuthResponse;
 import org.spring.dto.ErrorDto;
 import org.spring.exc.UserCommonException;
 import org.spring.model.PersonEntity;
@@ -35,7 +36,6 @@ public class AuthController {
 
     record RegisterRequest(String username, String password) {}
 
-    @PostMapping("/register")
     @Operation(summary = "register user",
             responses = {
                     @ApiResponse(
@@ -54,6 +54,7 @@ public class AuthController {
                             content = @Content()
                     )
             })
+    @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest req) {
         if (personRepository.existsByUsername(req.username())) {
             throw new UserCommonException(409,"Пользователь уже существует");
@@ -69,6 +70,24 @@ public class AuthController {
 
     record LoginRequest(String username, String password) {}
 
+    @Operation(summary = "login user",
+            responses = {
+                    @ApiResponse(
+                            description = "Пользователь авторизован",
+                            responseCode = "200",
+                            content = @Content(schema = @Schema(implementation = AuthResponse.class))
+                    ),
+                    @ApiResponse(
+                            description = "Пользователь не существует",
+                            responseCode = "400",
+                            content = @Content(schema = @Schema(implementation = ErrorDto.class))
+                    ),
+                    @ApiResponse(
+                            description = "Неизвестная ошибка",
+                            responseCode = "500",
+                            content = @Content()
+                    )
+            })
     @PostMapping("/login")
     public ResponseEntity<?> login(
             @Valid @RequestBody LoginRequest req,
@@ -92,11 +111,37 @@ public class AuthController {
         CookieUtil.addRefreshTokenCookie(response, rt.getToken());
 
         // return ONLY access token
-        return ResponseEntity.ok(Map.of(
-                "accessToken", accessToken
-        ));
+        return ResponseEntity.ok(new AuthResponse(accessToken));
     }
 
+    @Operation(summary = "refresh token",
+            responses = {
+                    @ApiResponse(
+                            description = "Успешное обновление refresh и access токенов",
+                            responseCode = "200",
+                            content = @Content(schema = @Schema(implementation = AuthResponse.class))
+                    ),
+                    @ApiResponse(
+                            description = "Refresh token не был передан",
+                            responseCode = "401",
+                            content = @Content(schema = @Schema(implementation = ErrorDto.class))
+                    ),
+                    @ApiResponse(
+                            description = "Refresh token не существует",
+                            responseCode = "403",
+                            content = @Content(schema = @Schema(implementation = ErrorDto.class))
+                    ),
+                    @ApiResponse(
+                            description = "Refresh token отозван или истек",
+                            responseCode = "440",
+                            content = @Content(schema = @Schema(implementation = ErrorDto.class))
+                    ),
+                    @ApiResponse(
+                            description = "Неизвестная ошибка",
+                            responseCode = "500",
+                            content = @Content()
+                    )
+            })
     @PostMapping("/refresh")
     public ResponseEntity<?> refresh(
             @CookieValue(value = "refresh_token", required = false) String refreshTokenFromCookie,
@@ -126,11 +171,37 @@ public class AuthController {
         Map<String, Object> claims = Map.of("roles", person.getRoles());
         String newAccessToken = jwtService.generateAccessToken(person.getUsername(), claims);
 
-        return ResponseEntity.ok(Map.of(
-                "accessToken", newAccessToken
-        ));
+        return ResponseEntity.ok(new AuthResponse(newAccessToken));
     }
 
+    @Operation(summary = "logout",
+            responses = {
+                    @ApiResponse(
+                            description = "Успешный logout",
+                            responseCode = "204",
+                            content = @Content()
+                    ),
+                    @ApiResponse(
+                            description = "Refresh token не был передан",
+                            responseCode = "401",
+                            content = @Content(schema = @Schema(implementation = ErrorDto.class))
+                    ),
+                    @ApiResponse(
+                            description = "Refresh token не существует",
+                            responseCode = "403",
+                            content = @Content(schema = @Schema(implementation = ErrorDto.class))
+                    ),
+                    @ApiResponse(
+                            description = "Refresh token отозван или истек",
+                            responseCode = "440",
+                            content = @Content(schema = @Schema(implementation = ErrorDto.class))
+                    ),
+                    @ApiResponse(
+                            description = "Неизвестная ошибка",
+                            responseCode = "500",
+                            content = @Content()
+                    )
+            })
     @PostMapping("/logout")
     public ResponseEntity<?> logout(
             @CookieValue(value = "refresh_token", required = false) String refreshTokenFromCookie,
@@ -138,20 +209,20 @@ public class AuthController {
     ) {
 
         if (refreshTokenFromCookie == null) {
-            throw new UserCommonException(400,"Refresh token не был передан");
+            throw new UserCommonException(401,"Refresh token не был передан");
         }
 
         RefreshToken Rt = refreshTokenService.findByToken(refreshTokenFromCookie)
                 .orElseThrow(() -> new UserCommonException(403,"Refresh token не существует"));
 
         if (Rt.isRevoked() || refreshTokenService.isExpired(Rt)) {
-            throw new UserCommonException(403,"Refresh token отозван или истек");
+            throw new UserCommonException(440,"Refresh token отозван или истек");
         }
 
         refreshTokenService.revokeToken(Rt);
 
         CookieUtil.clearRefreshToken(response);
 
-        return ResponseEntity.ok().build();
+        return ResponseEntity.noContent().build();
     }
 }

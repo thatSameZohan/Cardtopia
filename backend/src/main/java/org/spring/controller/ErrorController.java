@@ -1,4 +1,4 @@
-package org.spring.web;
+package org.spring.controller;
 
 import org.spring.dto.ErrorDto;
 import org.spring.exc.UserCommonException;

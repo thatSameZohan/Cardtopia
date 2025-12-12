@@ -1,10 +1,8 @@
-package org.spring.web;
+package org.spring.controller;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.spring.dto.Room;
 import org.spring.model.Message;
 import org.springframework.context.event.EventListener;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
@@ -20,11 +18,8 @@ import org.springframework.web.socket.messaging.SessionSubscribeEvent;
 
 import java.util.Collection;
 import java.util.Map;
-import java.util.Set;
-import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -33,71 +28,21 @@ public class ChatController {
 
     private static final Logger log = LoggerFactory.getLogger(ChatController.class);
     private final SimpMessagingTemplate messagingTemplate;
-    private final ObjectMapper objectMapper;
 
     private final Map<String, Room> roomStore = new ConcurrentHashMap<>();
     private final Map<String, String> sessionToRoomMap = new ConcurrentHashMap<>(); // sessionId -> roomId
     private static final Pattern roomTopicPattern = Pattern.compile("/topic/room/(.+)");
 
-    public ChatController(SimpMessagingTemplate messagingTemplate, ObjectMapper objectMapper) {
+    public ChatController(SimpMessagingTemplate messagingTemplate) {
         this.messagingTemplate = messagingTemplate;
-        this.objectMapper = objectMapper;
     }
 
-    public static class Room {
-        private String id;
-        private String name;
-        private final Set<String> participants = ConcurrentHashMap.newKeySet();
-        private final List<String> turnOrder = new CopyOnWriteArrayList<>();
-        private int turnIndex = 0;
-
-        public Room() {}
-        public Room(String id, String name) { this.id = id; this.name = name; }
-
-        public String getId() { return id; }
-        public void setId(String id) { this.id = id; }
-
-        public String getName() { return name; }
-        public void setName(String name) { this.name = name; }
-
-        @JsonProperty("participantsCount")
-        public int getParticipantsCount() { return participants.size(); }
-        public boolean isFull() { return participants.size() >= 2; }
-
-        public void addParticipant(String sessionId) {
-            participants.add(sessionId);
-            if (!turnOrder.contains(sessionId)) turnOrder.add(sessionId);
-        }
-
-        public void removeParticipant(String sessionId) {
-            participants.remove(sessionId);
-            turnOrder.remove(sessionId);
-            if (turnIndex >= turnOrder.size()) turnIndex = 0;
-        }
-
-        public Set<String> getParticipants() { return participants; }
-
-        public String getCurrentTurnPlayer() {
-            if (turnOrder.isEmpty()) return null;
-            return turnOrder.get(turnIndex);
-        }
-
-        public void nextTurn() {
-            if (!turnOrder.isEmpty()) turnIndex = (turnIndex + 1) % turnOrder.size();
-        }
-
-        @Override
-        public String toString() {
-            return "Room{" + "id='" + id + '\'' + ", name='" + name + "', participants=" + getParticipantsCount() + '}';
-        }
+    //@SendToUser("/queue/whoami") означает, что ответ придёт только конкретному пользователю, у которого открыт этот WebSocket-сессия.
+    @MessageMapping("/rooms/whoami")
+    @SendToUser("/queue/whoami")
+    public String sendSessionId(StompHeaderAccessor headerAccessor) {
+        return headerAccessor.getSessionId(); // возвращаем уникальный ID соединения
     }
-//@SendToUser("/queue/whoami") означает, что ответ придёт только конкретному пользователю, у которого открыт этот WebSocket-сессия.
-@MessageMapping("/rooms/whoami")
-@SendToUser("/queue/whoami")
-public String sendSessionId(StompHeaderAccessor headerAccessor) {
-    return headerAccessor.getSessionId(); // возвращаем уникальный ID соединения
-}
-
 
     @MessageMapping("/rooms/add")
     @SendToUser("/queue/rooms/created")
@@ -122,7 +67,7 @@ public String sendSessionId(StompHeaderAccessor headerAccessor) {
         if (room == null) return;
         if (room.getParticipantsCount() < 2) return;
 
-        room.turnIndex = 0; // начинаем с первого игрока
+        room.setTurnIndex(0); // начинаем с первого игрока
 
         Map<String, Object> turnState = Map.of(
             "currentTurn", room.getCurrentTurnPlayer(),
