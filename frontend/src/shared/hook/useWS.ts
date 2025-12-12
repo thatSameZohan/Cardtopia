@@ -19,8 +19,14 @@ export const useWS = () => {
         setConnected(false);
         console.log('STOMP: Disconnected');
       },
-      onWebSocketError: (error) => console.error('STOMP: WebSocket Error', error),
-      onStompError: (frame) => console.error('STOMP: Broker Error', frame.headers['message'], frame.body),
+      onWebSocketError: (error) =>
+        console.error('STOMP: WebSocket Error', error),
+      onStompError: (frame) =>
+        console.error(
+          'STOMP: Broker Error',
+          frame.headers['message'],
+          frame.body,
+        ),
     });
 
     client.activate();
@@ -32,8 +38,12 @@ export const useWS = () => {
   }, []);
 
   const subscribe = useCallback(
-    (destination: string, callback: (message: IMessage) => void): StompSubscription | null => {
-      if (clientRef.current && clientRef.current.active) return clientRef.current.subscribe(destination, callback);
+    (
+      destination: string,
+      callback: (message: IMessage) => void,
+    ): StompSubscription | null => {
+      if (clientRef.current && clientRef.current.active)
+        return clientRef.current.subscribe(destination, callback);
       console.error('STOMP: Cannot subscribe, client is not active.');
       return null;
     },
@@ -41,7 +51,8 @@ export const useWS = () => {
   );
 
   const publish = useCallback((destination: string, body?: string) => {
-    if (clientRef.current && clientRef.current.active) clientRef.current.publish({ destination, body });
+    if (clientRef.current && clientRef.current.active)
+      clientRef.current.publish({ destination, body });
     else console.error('STOMP: Cannot publish, client is not active.');
   }, []);
 
