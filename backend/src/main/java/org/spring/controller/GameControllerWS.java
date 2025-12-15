@@ -1,5 +1,7 @@
 package org.spring.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.spring.dto.*;
@@ -28,10 +30,11 @@ import java.util.Optional;
 @Slf4j
 @RequiredArgsConstructor
 @Controller
-class GameControllerWS {
+public class GameControllerWS {
 
     private final GameService gameService;
     private final SimpMessagingTemplate template;
+    private final ObjectMapper objectMapper;
 
     /**
      * Отправляет обновление состояния комнаты всем игрокам.
@@ -60,22 +63,43 @@ class GameControllerWS {
      * <p>
      * STOMP маршрут: /app/room.create
      * Заголовок: Authorization: Bearer +accessToken;
-     * Ответ: отправляется {@link GameState} только создателю через "/queue/room.{roomId}.state"
-     *
+     * Ответ: отправляется объект {@link GameState}  {
+     *   "roomId" : "1ead51a1",
+     *   "status" : "WAITING_FOR_PLAYER",
+     *   "players" : {
+     *     "user" : {
+     *       "playerId" : "user",
+     *       "deck" : [ ],
+     *       "discardPile" : [ ],
+     *       "hand" : [ ],
+     *       "playedCards" : [ ],
+     *       "currentAttack" : 0,
+     *       "currentGold" : 0,
+     *       "health" : 20
+     *     }
+     *   },
+     *   "activePlayerId" : null,
+     *   "marketDeck" : [ ],
+     *   "market" : [ ],
+     *   "playerIds" : [ "user" ]
+     * }
+     * только создателю комнаты по пути "/user/queue/room.created"
      * @param principal авторизованный пользователь
      */
     @MessageMapping("/room.create")
-    public void createRoom(Principal principal) {
+    public void createRoom(Principal principal) throws JsonProcessingException {
         if (principal == null){
             log.error("Пользователь не авторизован");
             return;
         };
         GameState gs = gameService.createRoom(principal.getName());
         // send STATE_UPDATE только создателю: используем user-queue
+        log.info("/room.create отправил пользователю {} по пути /user/queue/room.created объект GameState {}", principal.getName(), objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(gs));
         template.convertAndSendToUser(principal.getName(), "/user/queue/room.created", gs);
 //        template.convertAndSendToUser(principal.getName(), "/queue/room." + gs.getRoomId()+ ".state", gs);
 
     }
+
     /**
      * Присоединение текущего игрока к комнате.
      * <p>
