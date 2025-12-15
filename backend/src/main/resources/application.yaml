@@ -16,5 +16,5 @@ spring:
   port: 8080
 jwt:
   secret: afafa876saf876saf876as8sf6s87as6f7fas6fas78f6
-  access-ms: 120000 #2 min
-  refresh-ms: 600000 #10 min
+  access-ms: 1200000 #20 min
+  refresh-ms: 6000000 #100 min

@@ -1,5 +1,6 @@
 package org.spring.config;
 
+import lombok.RequiredArgsConstructor;
 import org.spring.service.impl.JpaUserDetailsService;
 import org.spring.service.impl.JwtService;
 import org.springframework.context.annotation.*;
@@ -18,15 +19,11 @@ import org.springframework.web.cors.CorsConfiguration;
 import java.util.List;
 @EnableWebSecurity
 @Configuration
+@RequiredArgsConstructor
 public class AppSecurityConfig {
 
     private final JwtService jwtService;
     private final JpaUserDetailsService userDetailsService;
-
-    public AppSecurityConfig(JwtService jwtService, JpaUserDetailsService userDetailsService) {
-        this.jwtService = jwtService;
-        this.userDetailsService = userDetailsService;
-    }
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {

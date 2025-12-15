@@ -3,7 +3,7 @@ package org.spring.controller;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.spring.dto.Room;
-import org.spring.model.Message;
+import org.spring.dto.Message;
 import org.springframework.context.event.EventListener;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -24,16 +24,16 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Controller
-public class ChatController {
+public class ChatControllerWS {
 
-    private static final Logger log = LoggerFactory.getLogger(ChatController.class);
+    private static final Logger log = LoggerFactory.getLogger(ChatControllerWS.class);
     private final SimpMessagingTemplate messagingTemplate;
 
     private final Map<String, Room> roomStore = new ConcurrentHashMap<>();
     private final Map<String, String> sessionToRoomMap = new ConcurrentHashMap<>(); // sessionId -> roomId
     private static final Pattern roomTopicPattern = Pattern.compile("/topic/room/(.+)");
 
-    public ChatController(SimpMessagingTemplate messagingTemplate) {
+    public ChatControllerWS(SimpMessagingTemplate messagingTemplate) {
         this.messagingTemplate = messagingTemplate;
     }
 
