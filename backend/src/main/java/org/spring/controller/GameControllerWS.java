@@ -63,27 +63,12 @@ public class GameControllerWS {
      * <p>
      * STOMP маршрут: /app/room.create
      * Заголовок: Authorization: Bearer +accessToken;
-     * Ответ: отправляется объект {@link GameState}  {
+     * Ответ: отправляется по пути "/queue/room.created" {
      *   "roomId" : "1ead51a1",
+     *   "roomName" "Комната +username"
      *   "status" : "WAITING_FOR_PLAYER",
-     *   "players" : {
-     *     "user" : {
-     *       "playerId" : "user",
-     *       "deck" : [ ],
-     *       "discardPile" : [ ],
-     *       "hand" : [ ],
-     *       "playedCards" : [ ],
-     *       "currentAttack" : 0,
-     *       "currentGold" : 0,
-     *       "health" : 20
-     *     }
-     *   },
-     *   "activePlayerId" : null,
-     *   "marketDeck" : [ ],
-     *   "market" : [ ],
      *   "playerIds" : [ "user" ]
      * }
-     * только создателю комнаты по пути "/user/queue/room.created"
      * @param principal авторизованный пользователь
      */
     @MessageMapping("/room.create")
@@ -92,10 +77,13 @@ public class GameControllerWS {
             log.error("Пользователь не авторизован");
             return;
         };
-        GameState gs = gameService.createRoom(principal.getName());
+        String username = principal.getName();
+        GameState gs = gameService.createRoom(username);
+        CreateRoomResponse resp = new CreateRoomResponse(gs.getRoomId(),"Комната "+principal.getName(),gs.getStatus(),gs.getPlayerIds());
+
         // send STATE_UPDATE только создателю: используем user-queue
-        log.info("/room.create отправил пользователю {} по пути /user/queue/room.created объект GameState {}", principal.getName(), objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(gs));
-        template.convertAndSendToUser(principal.getName(), "/user/queue/room.created", gs);
+        log.info("/room.create отправил пользователю {} по пути /queue/room.created объект CreateRoomResponse {}", username, objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(resp));
+        template.convertAndSendToUser(username, "/queue/room.created", resp);
 //        template.convertAndSendToUser(principal.getName(), "/queue/room." + gs.getRoomId()+ ".state", gs);
 
     }

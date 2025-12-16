@@ -1,11 +1,11 @@
 spring:
   datasource:
-    url: jdbc:postgresql://aws-1-eu-west-1.pooler.supabase.com:5432/postgres?sslmode=require
-    username: postgres.jfwbldocxafjzxhufaqm
-    password: postgres5784
-#    url: jdbc:postgresql://localhost:5432/cardtopia_db
-#    username: postgres
-#    password: 5784
+#    url: jdbc:postgresql://aws-1-eu-west-1.pooler.supabase.com:5432/postgres?sslmode=require
+#    username: postgres.jfwbldocxafjzxhufaqm
+#    password: postgres5784
+    url: jdbc:postgresql://localhost:5432/cardtopia_db
+    username: postgres
+    password: 5784
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
