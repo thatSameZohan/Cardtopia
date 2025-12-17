@@ -29,6 +29,15 @@ public class RoomControllerWs {
 
     private final Map<String, Room> rooms = new ConcurrentHashMap<>();
 
+    /**
+     * Ответ отправляется на маршрут "/topic/rooms"
+     * [{
+     * "id" : "1ead51a1",
+     * "name" "Комната +username"
+     * "players" : [ "user" ]
+     * "isFull" : false
+     * }]
+     */
     private void broadcastUpdatedRooms() {
         template.convertAndSend("/topic/rooms", rooms.values());
         log.info("rooms updated {} ", rooms.values());
@@ -38,15 +47,13 @@ public class RoomControllerWs {
         if (principal == null){
             return;
         }
-        template.convertAndSendToUser(principal.getName(), "/queue/errors", error);
+        template.convertAndSendToUser(principal.getName(), "/errors", error);
     }
 
     /**
      * Создание новой игровой комнаты.
-     * <p>
-     * STOMP маршрут: /app/room.create
-     * Заголовок: Authorization: Bearer +accessToken;
-     * Ответ: отправляется по пути "/queue/room.created"
+     * Запрос на маршрут: /app/room.create
+     * Ответ отправляется на маршрут "/user/room.created"
      * {
      * "id" : "1ead51a1",
      * "name" "Комната +username"
@@ -67,22 +74,27 @@ public class RoomControllerWs {
         Room room = new Room(gs.getRoomId(), "Комната " + principal.getName(), false);
         rooms.put(room.getId(), room);
         // send STATE_UPDATE только создателю: используем user-queue
-        template.convertAndSendToUser(username, "/queue/room.created", room.toString());
+        template.convertAndSendToUser(username, "/room.created", room.toString());
         broadcastUpdatedRooms();
-        log.info("/room.create отправил пользователю {} по пути /queue/room.created объект Room {}", username, objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(room));
+        log.info("/room.create отправил пользователю {} по пути /room.created объект Room {}", username, objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(room));
     }
 
     /**
      * Присоединение текущего игрока к комнате.
      * <p>
-     * STOMP маршрут: /app/room.join
-     * Payload: {@link JoinRequest} {roomId (String)}
-     *
-     * @param req       запрос с ID комнаты
+     * Запрос на маршрут: /app/room.join
+     * Ответ отправляется на маршрут "/topic/rooms"
+     * [{
+     * "id" : "1ead51a1",
+     * "name" "Комната +username"
+     * "players" : [ "user" ]
+     * "isFull" : false
+     * }]
+     * @param  req {@link JoinRequest} {roomId (String)}
      * @param principal авторизованный пользователь
      */
     @MessageMapping("/room.join")
-    public void joinRoom(JoinRequest req, Principal principal) {
+    public void joinRoom(@Payload JoinRequest req, Principal principal) {
 
         if (principal == null) {
             log.error("Пользователь не авторизован");
@@ -117,26 +129,57 @@ public class RoomControllerWs {
             sendErrorToUser(principal, ex.getMessage());
         }
     }
-
+    /**
+     * Запрос на маршрут: /app/room.list
+     * Ответ отправляется на маршрут "/topic/rooms"
+     * [{
+     * "id" : "1ead51a1",
+     * "name" "Комната +username"
+     * "players" : [ "user" ]
+     * "isFull" : false
+     * }]
+     */
     @MessageMapping("/room.list")
     public Collection<Room> listRooms() {
+        broadcastUpdatedRooms();
         return rooms.values();
     }
 
+    /**
+     * Запрос на маршрут: /app/room.leave
+     * Ответ отправляется на маршрут "/topic/rooms"
+     * [{
+     * "id" : "1ead51a1",
+     * "name" "Комната +username"
+     * "players" : [ "user" ]
+     * "isFull" : false
+     * }]
+     * @param  req {@link JoinRequest} {roomId (String)}
+     * @param principal авторизованный пользователь
+     */
     @MessageMapping("/room.leave")
-    public void leaveRoom(@Payload String roomId, Principal principal) {
-        Room room = rooms.get(roomId);
+    public void leaveRoom(@Payload JoinRequest req, Principal principal) {
+        Room room = rooms.get(req.roomId());
         room.getPlayers().remove(principal.getName());
         broadcastUpdatedRooms();
     }
 
+    /**
+     * Запрос на маршрут: /app/room.delete
+     * Ответ отправляется на маршрут "/topic/rooms"
+     * [{
+     * "id" : "1ead51a1",
+     * "name" "Комната +username"
+     * "players" : [ "user" ]
+     * "isFull" : false
+     * }]
+     * @param  req {@link JoinRequest} {roomId (String)}
+     */
     @MessageMapping("/room.delete")
-    public void deleteRoom(@Payload String roomId) {
-        Room removed = rooms.remove(roomId);
+    public void deleteRoom(@Payload JoinRequest req) {
+        Room removed = rooms.remove(req.roomId());
         if (removed != null){
             broadcastUpdatedRooms();
         }
     }
-
-
 }
