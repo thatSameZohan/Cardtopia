@@ -114,28 +114,28 @@ public class RoomControllerWs {
         }
 
         if (req == null || req.roomId() == null) {
-            sendErrorToUser(principal, "roomId required");
-            log.error("roomId required");
+            sendErrorToUser(principal, "roomId пустой");
+            log.error("roomId пустой");
             return;
         }
 
         Room room = rooms.get(req.roomId());
 
         if (room == null) {
-            sendErrorToUser(principal, "Room not found");
-            log.error("Room not found");
+            sendErrorToUser(principal, "Комнаты с таким ID не существует");
+            log.error("Комнаты с таким ID не существует");
             return;
         }
 
         if (room.getPlayers().size() >= 2) {
-            sendErrorToUser(principal, "Room is full");
-            log.error("Room is full");
+            sendErrorToUser(principal, "Комната заполнена");
+            log.error("Комната заполнена");
             return;
         }
 
         if (room.getPlayers().contains(principal.getName())) {
-            sendErrorToUser(principal, "You is already in the room");
-            log.error("Player is already in room");
+            sendErrorToUser(principal, "Вы уже находитесь в комнате");
+            log.error("Игрок уже находится в комнате");
             return;
         }
 
