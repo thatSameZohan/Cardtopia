@@ -41,7 +41,7 @@ public class RoomControllerWs {
         if (principal == null){
             return;
         }
-        template.convertAndSend("/user/queue/errors", error);
+        template.convertAndSendToUser(principal.getName(),"/queue/errors/", error);
     }
 
     /** Генерация уникального короткого ID комнаты */
@@ -53,7 +53,7 @@ public class RoomControllerWs {
     /**
      * Создание новой игровой комнаты.
      * Запрос на маршрут: /app/room.create
-     * Ответ отправляется на маршрут "/user/queue/room.created" и
+     * Ответ отправляется на маршрут "/user/queue/room.created"  и
      * {
      * "id" : "1ead51a1",
      * "name" "Комната +username"
@@ -72,9 +72,9 @@ public class RoomControllerWs {
         }
         String creatorName = principal.getName();
         Room room = new Room(generateRoomId(), "Комната " + creatorName, false);
-        room.getPlayers().add(principal.getName());
+        room.getPlayers().add(creatorName);
         rooms.put(room.getId(), room);
-        template.convertAndSend("user/queue/room.created", room);
+        template.convertAndSendToUser(principal.getName(),"/queue/room.created", room);
         broadcastUpdatedRooms();
         log.info("/app/room.create отработал");
     }
