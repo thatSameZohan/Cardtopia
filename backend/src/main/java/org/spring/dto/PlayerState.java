@@ -8,7 +8,9 @@ import lombok.ToString;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
-@Getter @Setter
+
+@Getter
+@Setter
 @ToString
 public class PlayerState {
     private final String playerId;

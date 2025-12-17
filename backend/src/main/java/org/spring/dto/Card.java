@@ -6,8 +6,10 @@ import lombok.Setter;
 import lombok.ToString;
 
 import java.util.UUID;
+
 @AllArgsConstructor
-@Getter @Setter
+@Getter
+@Setter
 @ToString
 public class Card {
 

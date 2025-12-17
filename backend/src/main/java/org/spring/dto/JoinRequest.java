@@ -1,3 +1,4 @@
 package org.spring.dto;
 
-public record JoinRequest (String roomId) {}
+public record JoinRequest(String roomId) {
+}

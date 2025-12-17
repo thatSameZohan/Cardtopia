@@ -64,22 +64,24 @@ public class GameControllerWS {
      * STOMP маршрут: /app/room.create
      * Заголовок: Authorization: Bearer +accessToken;
      * Ответ: отправляется по пути "/queue/room.created" {
-     *   "roomId" : "1ead51a1",
-     *   "roomName" "Комната +username"
-     *   "status" : "WAITING_FOR_PLAYER",
-     *   "playerIds" : [ "user" ]
+     * "roomId" : "1ead51a1",
+     * "roomName" "Комната +username"
+     * "status" : "WAITING_FOR_PLAYER",
+     * "playerIds" : [ "user" ]
      * }
+     *
      * @param principal авторизованный пользователь
      */
     @MessageMapping("/room.create")
     public void createRoom(Principal principal) throws JsonProcessingException {
-        if (principal == null){
+        if (principal == null) {
             log.error("Пользователь не авторизован");
             return;
-        };
+        }
+        ;
         String username = principal.getName();
         GameState gs = gameService.createRoom(username);
-        CreateRoomResponse resp = new CreateRoomResponse(gs.getRoomId(),"Комната "+principal.getName(),gs.getStatus(),gs.getPlayerIds());
+        CreateRoomResponse resp = new CreateRoomResponse(gs.getRoomId(), "Комната " + principal.getName(), gs.getStatus(), gs.getPlayerIds());
 
         // send STATE_UPDATE только создателю: используем user-queue
         log.info("/room.create отправил пользователю {} по пути /queue/room.created объект CreateRoomResponse {}", username, objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(resp));

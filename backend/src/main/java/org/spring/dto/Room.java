@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -12,7 +13,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 @NoArgsConstructor
 @AllArgsConstructor
-@Getter @Setter
+@Getter
+@Setter
 public class Room {
 
     private String id;
@@ -25,12 +27,20 @@ public class Room {
 
     private int turnIndex = 0;
 
-    public Room(String id, String name) { this.id = id; this.name = name; }
+    public Room(String id, String name) {
+        this.id = id;
+        this.name = name;
+    }
 
 
     @JsonProperty("participantsCount")
-    public int getParticipantsCount() { return participants.size(); }
-    public boolean isFull() { return participants.size() >= 2; }
+    public int getParticipantsCount() {
+        return participants.size();
+    }
+
+    public boolean isFull() {
+        return participants.size() >= 2;
+    }
 
     public void addParticipant(String sessionId) {
         participants.add(sessionId);

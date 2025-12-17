@@ -70,8 +70,8 @@ public class ChatControllerWS {
         room.setTurnIndex(0); // начинаем с первого игрока
 
         Map<String, Object> turnState = Map.of(
-            "currentTurn", room.getCurrentTurnPlayer(),
-            "participants", room.getParticipants()
+                "currentTurn", room.getCurrentTurnPlayer(),
+                "participants", room.getParticipants()
         );
         messagingTemplate.convertAndSend("/topic/room/" + roomId + "/turn", turnState);
     }
@@ -90,8 +90,8 @@ public class ChatControllerWS {
 
 
         Map<String, Object> turnState = Map.of(
-            "currentTurn", room.getCurrentTurnPlayer(),
-            "participants", room.getParticipants()
+                "currentTurn", room.getCurrentTurnPlayer(),
+                "participants", room.getParticipants()
         );
         messagingTemplate.convertAndSend("/topic/room/" + roomId + "/turn", turnState);
     }
