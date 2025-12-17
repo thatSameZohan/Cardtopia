@@ -7,12 +7,20 @@ import { useEffect } from 'react';
 
 export default function RoomList() {
   const router = useRouter();
-  const { rooms, createRoom, joinRoom, connected, deleteRoom, newRoomId } =
-    useRooms();
+  const {
+    rooms,
+    createRoom,
+    joinRoom,
+    connected,
+    deleteRoom,
+    newRoomId,
+    leaveRoom,
+  } = useRooms();
 
   const handleJoinRoom = async (roomId: string) => {
-    const id = await joinRoom(roomId);
-    router.push(`/room/${id}`);
+    joinRoom(roomId);
+    console.log('joinRoom');
+    // router.push(`/room/${id}`);
   };
   const handleCreateRoom = () => {
     createRoom();
@@ -41,12 +49,15 @@ export default function RoomList() {
             <li
               key={room.id}
               className={clsx(styles.roomItem, room.full && styles.block)}
-              onClick={() => handleJoinRoom(room.id)}
+              // onClick={() => handleJoinRoom(room.id)}
             >
               <span className={styles.roomName}>{room.name}</span>
               <span className={styles.participantCount}>
                 {room.participantsCount}/2
               </span>
+              <button onClick={() => handleJoinRoom(room.id)}>join</button>
+              <button onClick={() => leaveRoom(room.id)}>leave</button>
+              <button onClick={() => deleteRoom(room.id)}>x</button>
             </li>
           ))
         ) : (

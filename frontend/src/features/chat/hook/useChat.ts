@@ -29,7 +29,7 @@ export const useChat = () => {
   }, [connected, subscribe]);
   const sendMessage = useCallback(() => {
     if (!messageText.trim()) return;
-    publish('/app/chat', JSON.stringify({ text: messageText }));
+    publish('/app/chat', messageText);
     setMessageText('');
   }, [messageText, publish]);
 

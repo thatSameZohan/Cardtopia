@@ -14,6 +14,7 @@ export const useRooms = () => {
   const [rooms, setRooms] = useState<Room[]>([]);
   const roomsSub = useRef<StompSubscription | null>(null);
   const createdSub = useRef<StompSubscription | null>(null);
+  const errorSub = useRef<StompSubscription | null>(null);
   const [newRoomId, setNewRoomId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -21,17 +22,22 @@ export const useRooms = () => {
 
     roomsSub.current = subscribe('/topic/rooms', (msg) => {
       const updated: Room[] = JSON.parse(msg.body);
+      console.log(JSON.parse(msg.body), '/topic/rooms');
       setRooms(updated.filter((room) => !room.full)); // только здесь обновляем список комнат
     });
-    createdSub.current = subscribe(
-      '/user/queue/rooms/created',
-      (room: IMessage) => {
-        const { id } = JSON.parse(room.body);
-        setNewRoomId(id);
-      },
-    );
 
-    publish('/app/rooms/list');
+    errorSub.current = subscribe('/user/errors', (msg) => {
+      const error = JSON.parse(msg.body);
+      console.log(error);
+    });
+
+    createdSub.current = subscribe('/user/room.created', (room: IMessage) => {
+      const roomW = JSON.parse(room.body);
+      console.log(roomW);
+      // setNewRoomId(id);
+    });
+
+    publish('/app/room.list');
 
     return () => {
       roomsSub.current?.unsubscribe();
@@ -40,13 +46,28 @@ export const useRooms = () => {
   }, [connected, subscribe, publish]);
 
   const createRoom = () => {
-    publish('/app/rooms/add', 'Новая комната');
+    publish('/app/room.create');
   };
 
   const joinRoom = async (roomId: string) => {
-    return roomId;
+    publish('/app/room.join', JSON.stringify({ roomId }));
   };
-  const deleteRoom = async (roomId: string) =>
-    publish('/app/rooms/delete', roomId);
-  return { rooms, createRoom, joinRoom, connected, deleteRoom, newRoomId };
+
+  const leaveRoom = async (roomId: string) => {
+    publish('/app/room.leave', JSON.stringify({ roomId }));
+  };
+
+  const deleteRoom = async (roomId: string) => {
+    publish('/app/room.delete', JSON.stringify({ roomId }));
+  };
+
+  return {
+    rooms,
+    createRoom,
+    joinRoom,
+    connected,
+    deleteRoom,
+    newRoomId,
+    leaveRoom,
+  };
 };
