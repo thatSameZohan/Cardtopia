@@ -4,10 +4,12 @@ import { useEffect, useRef } from 'react';
 import { useChat } from '../hook/useChat';
 
 import styles from './Chat.module.scss';
+import { RootState, useAppSelector } from '@/redux/store';
 
 export default function Chat() {
   const { messages, messageText, setMessageText, sendMessage, connected } =
     useChat();
+  const username = useAppSelector((state: RootState) => state.auth.username);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   // Прокрутка вниз при новом сообщении
@@ -36,7 +38,7 @@ export default function Chat() {
         {messages.map((m, i) => (
           <div
             key={i}
-            className={`${styles.message} ${m.sender ? styles.message_own : styles.message_other}`}
+            className={`${styles.message} ${m.sender === username ? styles.message_own : styles.message_other}`}
           >
             <div className={styles.message_bubble}>
               {m.sender && (

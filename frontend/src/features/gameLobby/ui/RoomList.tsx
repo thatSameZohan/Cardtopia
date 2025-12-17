@@ -4,9 +4,11 @@ import { useRouter } from 'next/navigation';
 import { useRooms } from '../hook/useRooms';
 import styles from './RoomList.module.scss';
 import { useEffect } from 'react';
+import { RootState, useAppSelector } from '@/redux/store';
 
 export default function RoomList() {
   const router = useRouter();
+
   const {
     rooms,
     createRoom,
