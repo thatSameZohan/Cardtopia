@@ -12,7 +12,7 @@ public class ErrorController {
     @ExceptionHandler(UserCommonException.class)
     public ResponseEntity<ErrorDto> handleUserAlreadyExistException(UserCommonException exc) {
 
-        var errorDto= new ErrorDto(exc.getCode(),exc.getMessage());
+        var errorDto = new ErrorDto(exc.getCode(), exc.getMessage());
 
         return ResponseEntity.status(exc.getCode()).body(errorDto);
     }

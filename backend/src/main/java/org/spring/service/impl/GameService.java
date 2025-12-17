@@ -178,14 +178,14 @@ public class GameService {
         Card card = opt.get();
         player.getHand().remove(card);
         player.getPlayedCards().add(card);
-        player.setCurrentAttack(player.getCurrentAttack()+card.getAttack());
-        player.setCurrentGold(player.getCurrentGold()+card.getGold());
+        player.setCurrentAttack(player.getCurrentAttack() + card.getAttack());
+        player.setCurrentGold(player.getCurrentGold() + card.getGold());
         log.info("Карта сыграла");
         // простой пример обработки возможностей
         if ("DRAW_1".equals(card.getAbility())) {
             drawCardsToHand(player, 1);
         }
-        log.info("Карты в руке для игрока {} {}. Текущее золото {}, текущая атака {}", player.getPlayerId(), player.getHand(),  player.getCurrentGold(),player.getCurrentAttack());
+        log.info("Карты в руке для игрока {} {}. Текущее золото {}, текущая атака {}", player.getPlayerId(), player.getHand(), player.getCurrentGold(), player.getCurrentAttack());
     }
 
     /**
@@ -206,15 +206,15 @@ public class GameService {
         Optional<Card> opt = gs.getMarket().stream().filter(c -> c.getId().equals(marketCardId)).findFirst();
 
         if (opt.isEmpty()) {
-            throw new UserCommonException (400, "Card not in market");
+            throw new UserCommonException(400, "Card not in market");
         }
         Card card = opt.get();
 
         if (player.getCurrentGold() < card.getCost()) {
-            throw new UserCommonException (400, "Not enough gold");
+            throw new UserCommonException(400, "Not enough gold");
         }
 
-        player.setCurrentGold(player.getCurrentGold()- card.getCost());
+        player.setCurrentGold(player.getCurrentGold() - card.getCost());
         player.getDiscardPile().add(card);
         // замена из магазина карт
         int idx = gs.getMarket().indexOf(card);
@@ -253,7 +253,7 @@ public class GameService {
 
         PlayerState opponent = gs.getPlayers().get(opponentId);
 
-        opponent.setHealth(opponent.getHealth()-player.getCurrentAttack());
+        opponent.setHealth(opponent.getHealth() - player.getCurrentAttack());
         player.setCurrentAttack(0);
 
         if (opponent.getHealth() <= 0) {

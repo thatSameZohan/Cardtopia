@@ -23,6 +23,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
+
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/v1/api/auth")
@@ -57,7 +58,7 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest req) {
         if (personRepository.existsByUsername(req.username())) {
-            throw new UserCommonException(409,"Пользователь уже существует");
+            throw new UserCommonException(409, "Пользователь уже существует");
         }
         PersonEntity person = new PersonEntity();
         person.setUsername(req.username());
@@ -68,7 +69,8 @@ public class AuthController {
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
-    record LoginRequest(String username, String password) {}
+    record LoginRequest(String username, String password) {
+    }
 
     @Operation(summary = "login user",
             responses = {
@@ -95,7 +97,7 @@ public class AuthController {
     ) {
 
         PersonEntity person = personRepository.findByUsername(req.username())
-                .orElseThrow(() -> new UserCommonException(400,"Такой пользователь не существует"));
+                .orElseThrow(() -> new UserCommonException(400, "Такой пользователь не существует"));
 
         Authentication auth = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(req.username(), req.password())
@@ -148,14 +150,14 @@ public class AuthController {
             HttpServletResponse response
     ) {
         if (refreshTokenFromCookie == null) {
-            throw new UserCommonException(401,"Refresh token не был передан");
+            throw new UserCommonException(401, "Refresh token не был передан");
         }
 
         RefreshToken oldRt = refreshTokenService.findByToken(refreshTokenFromCookie)
-                .orElseThrow(() -> new UserCommonException(403,"Refresh token не существует"));
+                .orElseThrow(() -> new UserCommonException(403, "Refresh token не существует"));
 
         if (oldRt.isRevoked() || refreshTokenService.isExpired(oldRt)) {
-            throw new UserCommonException(440,"Refresh token отозван или истек");
+            throw new UserCommonException(440, "Refresh token отозван или истек");
         }
 
         PersonEntity person = oldRt.getPerson();
@@ -209,14 +211,14 @@ public class AuthController {
     ) {
 
         if (refreshTokenFromCookie == null) {
-            throw new UserCommonException(401,"Refresh token не был передан");
+            throw new UserCommonException(401, "Refresh token не был передан");
         }
 
         RefreshToken Rt = refreshTokenService.findByToken(refreshTokenFromCookie)
-                .orElseThrow(() -> new UserCommonException(403,"Refresh token не существует"));
+                .orElseThrow(() -> new UserCommonException(403, "Refresh token не существует"));
 
         if (Rt.isRevoked() || refreshTokenService.isExpired(Rt)) {
-            throw new UserCommonException(440,"Refresh token отозван или истек");
+            throw new UserCommonException(440, "Refresh token отозван или истек");
         }
 
         refreshTokenService.revokeToken(Rt);

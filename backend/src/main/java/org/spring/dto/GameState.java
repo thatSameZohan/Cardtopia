@@ -6,7 +6,9 @@ import lombok.ToString;
 import org.spring.enums.GameStatus;
 
 import java.util.*;
-@Getter @Setter
+
+@Getter
+@Setter
 @ToString
 public class GameState {
 

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Room Create/Join (JWT + WebSocket)</title>
+
+    <!-- SockJS -->
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <!-- STOMP -->
+    <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7/bundles/stomp.umd.min.js"></script>
+
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        input, button { padding: 6px; margin: 4px 0; width: 100%; }
+        #log { border: 1px solid #ccc; height: 250px; overflow: auto; padding: 10px; }
+        .ok { color: green; }
+        .err { color: red; }
+    </style>
+</head>
+<body>
+
+<h3>WebSocket Room (JWT)</h3>
+
+<label>Access Token (JWT)</label>
+<textarea id="token" rows="3" placeholder="Bearer eyJhbGciOiJIUzI1NiJ9..."></textarea>
+
+<button onclick="connect()">Connect</button>
+<button onclick="createRoom()">Create Room</button>
+<input type="text" id="joinRoomId" placeholder="Room ID to join">
+<button onclick="joinRoom()">Join Room</button>
+<button onclick="disconnect()">Disconnect</button>
+
+<h4>Logs</h4>
+<div id="log"></div>
+
+<script>
+    let client = null;
+    let subscribedRooms = {};
+
+    function log(msg, type = "") {
+        const div = document.createElement("div");
+        div.className = type;
+        div.innerText = new Date().toLocaleTimeString() + " — " + msg;
+        document.getElementById("log").appendChild(div);
+        document.getElementById("log").scrollTop =
+            document.getElementById("log").scrollHeight;
+    }
+
+    function connect() {
+        const token = document.getElementById("token").value.trim();
+        if (!token) { log("Access token is empty", "err"); return; }
+
+        const socket = new SockJS("http://localhost:8080/ws");
+
+        client = new StompJs.Client({
+            webSocketFactory: () => socket,
+            connectHeaders: { Authorization: token.startsWith("Bearer ") ? token : "Bearer " + token },
+            debug: msg => log("[STOMP] " + msg),
+            onConnect: frame => {
+                log("Connected", "ok");
+
+                // Подписка на общие ошибки
+                client.subscribe("/user/queue/errors", msg => {
+                    log("ERROR: " + msg.body, "err");
+                });
+
+                // Подписка на сообщения о создании комнат
+                client.subscribe("/user/queue/room.created", msg => {
+                    const gs = JSON.parse(msg.body);
+                    log("ROOM CREATED: " + JSON.stringify(gs), "ok");
+                });
+            },
+            onStompError: frame => { log("STOMP ERROR: " + frame.headers["message"], "err"); },
+            onWebSocketError: err => { log("WebSocket error", "err"); }
+        });
+
+        client.activate();
+    }
+
+    function createRoom() {
+        if (!client || !client.connected) { log("Not connected", "err"); return; }
+        log("Sending /app/room.create");
+        client.publish({ destination: "/app/room.create", body: "" });
+    }
+
+    function joinRoom() {
+        if (!client || !client.connected) { log("Not connected", "err"); return; }
+        const roomId = document.getElementById("joinRoomId").value.trim();
+        if (!roomId) { log("Room ID is required", "err"); return; }
+
+        log("Joining room: " + roomId);
+
+        // payload для /room.join
+        const payload = { roomId: roomId };
+        client.publish({
+            destination: "/app/room.join",
+            body: JSON.stringify(payload)
+        });
+
+        // Подписка на состояние комнаты (если ещё не подписаны)
+        if (!subscribedRooms[roomId]) {
+            client.subscribe("/user/queue/room." + roomId + ".state", msg => {
+                const gs = JSON.parse(msg.body);
+                log("ROOM STATE: " + JSON.stringify(gs), "ok");
+            });
+            subscribedRooms[roomId] = true;
+        }
+    }
+
+    function disconnect() {
+        if (client) { client.deactivate(); log("Disconnected"); subscribedRooms = {}; }
+    }
+</script>
+
+</body>
+</html>

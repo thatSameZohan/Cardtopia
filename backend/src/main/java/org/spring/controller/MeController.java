@@ -37,12 +37,12 @@ public class MeController {
                     )
             })
     @GetMapping
-    public MeResponse getCurrentUser (@AuthenticationPrincipal UserDetails user) {
+    public MeResponse getCurrentUser(@AuthenticationPrincipal UserDetails user) {
 
         if (user == null) {
             throw new UserCommonException(401, "Пользователь не авторизован");
         }
-        return new  MeResponse(user.getUsername());
+        return new MeResponse(user.getUsername());
     }
 
 }
