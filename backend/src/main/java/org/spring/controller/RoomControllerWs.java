@@ -24,7 +24,7 @@ public class RoomControllerWs {
     private final Map<String, Room> rooms = new ConcurrentHashMap<>();
 
     /**
-     * Ответ отправляется на маршрут "/topic/rooms"
+     * Ответ в виде JSON отправляется на маршрут "/topic/rooms"
      * [{
      * "id" : "1ead51a1",
      * "name" "Комната +username"
@@ -37,6 +37,9 @@ public class RoomControllerWs {
         log.info("rooms updated {} ", rooms.values());
     }
 
+    /**
+     * Ответ в виде СТРОКИ отправляется на маршрут "/user/queue/errors/"
+     */
     private void sendErrorToUser(Principal principal, String error) {
         if (principal == null){
             return;
@@ -53,7 +56,7 @@ public class RoomControllerWs {
     /**
      * Создание новой игровой комнаты.
      * Запрос на маршрут: /app/room.create
-     * Ответ отправляется на маршрут "/user/queue/room.created"  и
+     * Ответ отправляется на маршрут "/user/queue/room.created"
      * {
      * "id" : "1ead51a1",
      * "name" "Комната +username"
@@ -71,6 +74,13 @@ public class RoomControllerWs {
             return;
         }
         String creatorName = principal.getName();
+        for (Room room : rooms.values()) {
+            if (room.getPlayers().contains(creatorName)){
+                sendErrorToUser(principal, "Вы уже находитесь в комнате");
+                log.error("Пользователь уже находится в комнате");
+                return;
+            };
+        }
         Room room = new Room(generateRoomId(), "Комната " + creatorName, false);
         room.getPlayers().add(creatorName);
         rooms.put(room.getId(), room);
@@ -177,6 +187,8 @@ public class RoomControllerWs {
         if (room.getPlayers().isEmpty()) {
             rooms.remove(room.getId());
         }
+
+        room.setIsFull(false);
 
         broadcastUpdatedRooms();
         log.info("/app/room.leave отработал");
