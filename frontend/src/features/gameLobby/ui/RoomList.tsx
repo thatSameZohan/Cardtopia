@@ -3,35 +3,21 @@ import clsx from 'clsx';
 import { useRouter } from 'next/navigation';
 import { useRooms } from '../hook/useRooms';
 import styles from './RoomList.module.scss';
-import { useEffect } from 'react';
-import { RootState, useAppSelector } from '@/redux/store';
+import { Room } from '../type/type';
 
 export default function RoomList() {
   const router = useRouter();
 
-  const {
-    rooms,
-    createRoom,
-    joinRoom,
-    connected,
-    deleteRoom,
-    newRoomId,
-    leaveRoom,
-  } = useRooms();
+  const { rooms, createRoom, joinRoom, connected, deleteRoom, leaveRoom } =
+    useRooms();
 
   const handleJoinRoom = async (roomId: string) => {
     joinRoom(roomId);
-    console.log('joinRoom');
-    // router.push(`/room/${id}`);
+    router.push(`/room/${roomId}`);
   };
   const handleCreateRoom = () => {
     createRoom();
   };
-  // useEffect(() => {
-  //   if (newRoomId) {
-  //     router.push(`/room/${newRoomId}`);
-  //   }
-  // }, [newRoomId]);
   return (
     <div className={styles.roomListContainer}>
       <div className={styles.header}>
@@ -47,10 +33,10 @@ export default function RoomList() {
 
       <ul className={styles.roomList}>
         {rooms.length > 0 ? (
-          rooms.map((room) => (
+          rooms.map((room: Room) => (
             <li
               key={room.id}
-              className={clsx(styles.roomItem, room.full && styles.block)}
+              className={clsx(styles.roomItem, room.isFull && styles.block)}
               // onClick={() => handleJoinRoom(room.id)}
             >
               <span className={styles.roomName}>{room.name}</span>

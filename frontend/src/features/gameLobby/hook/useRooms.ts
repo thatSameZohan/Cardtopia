@@ -1,13 +1,7 @@
 import { useWSContext } from '@/shared/ui/WSProvider/WSProvider';
 import { StompSubscription, IMessage } from '@stomp/stompjs';
 import { useRef, useEffect, useState, useCallback } from 'react';
-
-export interface Room {
-  id: string;
-  name: string;
-  participantsCount: number;
-  full: boolean;
-}
+import { Room } from '../type/type';
 
 export const useRooms = () => {
   const { connected, subscribe, publish } = useWSContext();
@@ -15,7 +9,6 @@ export const useRooms = () => {
   const roomsSub = useRef<StompSubscription | null>(null);
   const createdSub = useRef<StompSubscription | null>(null);
   const errorSub = useRef<StompSubscription | null>(null);
-  const [newRoomId, setNewRoomId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!connected) return;
@@ -23,7 +16,7 @@ export const useRooms = () => {
     roomsSub.current = subscribe('/topic/rooms', (msg) => {
       const updated: Room[] = JSON.parse(msg.body);
       console.log(JSON.parse(msg.body), '/topic/rooms');
-      setRooms(updated.filter((room) => !room.full)); // только здесь обновляем список комнат
+      setRooms(updated.filter((room) => !room.isFull)); // только здесь обновляем список комнат
     });
 
     errorSub.current = subscribe('/user/errors', (msg) => {
@@ -34,7 +27,6 @@ export const useRooms = () => {
     createdSub.current = subscribe('/user/room.created', (room: IMessage) => {
       const roomW = JSON.parse(room.body);
       console.log(roomW);
-      // setNewRoomId(id);
     });
 
     publish('/app/room.list');
@@ -67,7 +59,6 @@ export const useRooms = () => {
     joinRoom,
     connected,
     deleteRoom,
-    newRoomId,
     leaveRoom,
   };
 };
