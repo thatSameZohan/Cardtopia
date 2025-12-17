@@ -1,10 +1,8 @@
 package org.spring.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.spring.dto.GameState;
 import org.spring.dto.JoinRequest;
 import org.spring.dto.Room;
 import org.spring.service.impl.GameService;
@@ -15,7 +13,6 @@ import org.springframework.stereotype.Controller;
 import java.security.Principal;
 import java.util.Collection;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -26,7 +23,6 @@ public class RoomControllerWs {
 
     private final SimpMessagingTemplate template;
     private final GameService gameService;
-    private final ObjectMapper objectMapper;
 
     private final Map<String, Room> rooms = new ConcurrentHashMap<>();
 
@@ -109,36 +105,34 @@ public class RoomControllerWs {
             log.error("Пользователь не авторизован");
             return;
         }
+
         if (req == null || req.roomId() == null) {
             sendErrorToUser(principal, "roomId required");
+            log.error("roomId required");
             return;
         }
-        Optional<GameState> opt = gameService.findRoom(req.roomId());
-        if (opt.isEmpty()) {
+
+        Room room = rooms.get(req.roomId());
+
+        if (room == null) {
             sendErrorToUser(principal, "Room not found");
+            log.error("Room not found");
             return;
         }
-        GameState gs = opt.get();
-        try {
-            if (gs.getPlayers().size() >= 2) {
-                sendErrorToUser(principal, "Room is full");
-                return;
-            }
-            gameService.joinRoom(req.roomId(), principal.getName());
-            // re-fetch state
-            gs = gameService.findRoom(req.roomId()).isPresent() ? gameService.findRoom(req.roomId()).get() : null;
-            assert gs != null;
-            Room room = rooms.get(gs.getRoomId());
-            if (room.isFull()){
-                return;
-            }
-            room.setIsFull(true);
-            broadcastUpdatedRooms();
-        } catch (IllegalStateException ex) {
-            sendErrorToUser(principal, ex.getMessage());
+
+        if (room.getPlayers().size() >= 2) {
+            sendErrorToUser(principal, "Room is full");
+            log.error("Room is full");
+            return;
         }
+
+        rooms.get(req.roomId()).getPlayers().add(principal.getName());
+
+        broadcastUpdatedRooms();
+
         log.info("/app/room.join отработал");
     }
+
     /**
      * Запрос на маршрут: /app/room.list
      * Ответ отправляется на маршрут "/topic/rooms"

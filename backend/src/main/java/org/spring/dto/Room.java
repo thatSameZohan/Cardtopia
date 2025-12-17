@@ -32,10 +32,6 @@ public class Room {
         return players.size();
     }
 
-    public boolean isFull() {
-        return players.size() >= 2;
-    }
-
     @Override
     public String toString() {
         return "Room{" + "id='" + id + '\'' + ", name='" + name + "', participants=" + getParticipantsCount() + '}';
