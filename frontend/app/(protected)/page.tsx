@@ -5,6 +5,6 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: 'Лобби игры' };
 }
 
-export default function AuthTestPage() {
+export default function Home() {
   return <HomepageView />;
 }

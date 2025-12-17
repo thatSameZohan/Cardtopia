@@ -3,25 +3,35 @@ import clsx from 'clsx';
 import { useRouter } from 'next/navigation';
 import { useRooms } from '../hook/useRooms';
 import styles from './RoomList.module.scss';
+import { Room } from '../type/type';
 import { useEffect } from 'react';
 
 export default function RoomList() {
   const router = useRouter();
-  const { rooms, createRoom, joinRoom, connected, deleteRoom, newRoomId } =
-    useRooms();
+
+  const {
+    rooms,
+    createRoom,
+    joinRoom,
+    connected,
+    deleteRoom,
+    leaveRoom,
+    newRoomId,
+  } = useRooms();
 
   const handleJoinRoom = async (roomId: string) => {
-    const id = await joinRoom(roomId);
-    router.push(`/room/${id}`);
+    joinRoom(roomId);
+    router.push(`/room/${roomId}`);
   };
   const handleCreateRoom = () => {
     createRoom();
   };
-  // useEffect(() => {
-  //   if (newRoomId) {
-  //     router.push(`/room/${newRoomId}`);
-  //   }
-  // }, [newRoomId]);
+  console.log(newRoomId, 'newRoomId');
+  useEffect(() => {
+    if (newRoomId) {
+      router.push(`/room/${newRoomId}`);
+    }
+  }, [newRoomId]);
   return (
     <div className={styles.roomListContainer}>
       <div className={styles.header}>
@@ -37,16 +47,19 @@ export default function RoomList() {
 
       <ul className={styles.roomList}>
         {rooms.length > 0 ? (
-          rooms.map((room) => (
+          rooms.map((room: Room) => (
             <li
               key={room.id}
-              className={clsx(styles.roomItem, room.full && styles.block)}
-              onClick={() => handleJoinRoom(room.id)}
+              className={clsx(styles.roomItem)}
+              // onClick={() => handleJoinRoom(room.id)}
             >
               <span className={styles.roomName}>{room.name}</span>
               <span className={styles.participantCount}>
                 {room.participantsCount}/2
               </span>
+              <button onClick={() => handleJoinRoom(room.id)}>join</button>
+              <button onClick={() => leaveRoom(room.id)}>leave</button>
+              <button onClick={() => deleteRoom(room.id)}>x</button>
             </li>
           ))
         ) : (

@@ -1,37 +1,42 @@
 import { useWSContext } from '@/shared/ui/WSProvider/WSProvider';
 import { StompSubscription, IMessage } from '@stomp/stompjs';
 import { useRef, useEffect, useState, useCallback } from 'react';
-
-export interface Room {
-  id: string;
-  name: string;
-  participantsCount: number;
-  full: boolean;
-}
+import { Room } from '../type/type';
+import { toast } from 'react-toastify';
 
 export const useRooms = () => {
   const { connected, subscribe, publish } = useWSContext();
   const [rooms, setRooms] = useState<Room[]>([]);
+  const [newRoomId, setNewRoomId] = useState();
   const roomsSub = useRef<StompSubscription | null>(null);
   const createdSub = useRef<StompSubscription | null>(null);
-  const [newRoomId, setNewRoomId] = useState<string | null>(null);
+  const errorSub = useRef<StompSubscription | null>(null);
 
   useEffect(() => {
     if (!connected) return;
 
     roomsSub.current = subscribe('/topic/rooms', (msg) => {
       const updated: Room[] = JSON.parse(msg.body);
-      setRooms(updated.filter((room) => !room.full)); // только здесь обновляем список комнат
+      console.log(JSON.parse(msg.body), '/topic/rooms');
+      setRooms(updated.filter((room) => !room.isFull)); // только здесь обновляем список комнат
     });
+
+    errorSub.current = subscribe('/user/queue/errors', (msg) => {
+      const error = JSON.parse(msg.body);
+      toast.error(error);
+      console.log(error, '##########################');
+    });
+
     createdSub.current = subscribe(
-      '/user/queue/rooms/created',
+      '/user/queue/room.created',
       (room: IMessage) => {
-        const { id } = JSON.parse(room.body);
-        setNewRoomId(id);
+        const id = JSON.parse(room.body);
+        console.log(room.body, 'erterterterterteterte');
+        // setNewRoomId(id);
       },
     );
 
-    publish('/app/rooms/list');
+    publish('/app/room.list');
 
     return () => {
       roomsSub.current?.unsubscribe();
@@ -40,13 +45,28 @@ export const useRooms = () => {
   }, [connected, subscribe, publish]);
 
   const createRoom = () => {
-    publish('/app/rooms/add', 'Новая комната');
+    publish('/app/room.create');
   };
 
   const joinRoom = async (roomId: string) => {
-    return roomId;
+    publish('/app/room.join', JSON.stringify({ roomId }));
   };
-  const deleteRoom = async (roomId: string) =>
-    publish('/app/rooms/delete', roomId);
-  return { rooms, createRoom, joinRoom, connected, deleteRoom, newRoomId };
+
+  const leaveRoom = async (roomId: string) => {
+    publish('/app/room.leave', JSON.stringify({ roomId }));
+  };
+
+  const deleteRoom = async (roomId: string) => {
+    publish('/app/room.delete', JSON.stringify({ roomId }));
+  };
+
+  return {
+    rooms,
+    createRoom,
+    joinRoom,
+    connected,
+    deleteRoom,
+    leaveRoom,
+    newRoomId,
+  };
 };
