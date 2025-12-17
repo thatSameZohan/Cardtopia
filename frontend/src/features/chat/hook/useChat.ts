@@ -11,7 +11,6 @@ export const useChat = () => {
   const { connected, subscribe, publish } = useWSContext();
   const [messages, setMessages] = useState<Message[]>([]);
   const [messageText, setMessageText] = useState('');
-  const username = useAppSelector((state: RootState) => state.auth.username) ?? 'Guest';
   const subscriptionRef = useRef<StompSubscription | null>(null);
   useEffect(() => {
     if (!connected || !subscribe) return;
@@ -19,6 +18,7 @@ export const useChat = () => {
     subscriptionRef.current = subscribe('/topic/chat', (msg) => {
       try {
         const m = JSON.parse(msg.body);
+        console.log(m, 'mm');
         setMessages((prev) => [...prev, m]);
       } catch (e) {
         console.error('useChat: invalid message', msg.body);
@@ -29,15 +29,14 @@ export const useChat = () => {
   }, [connected, subscribe]);
   const sendMessage = useCallback(() => {
     if (!messageText.trim()) return;
-    publish('/app/chat', JSON.stringify({ sender: username, text: messageText }));
+    publish('/app/chat', JSON.stringify({ text: messageText }));
     setMessageText('');
-  }, [messageText, publish, username]);
+  }, [messageText, publish]);
 
   return {
     messages,
     messageText,
     setMessageText,
-    username,
     sendMessage,
     connected,
   };

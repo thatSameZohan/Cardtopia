@@ -6,7 +6,8 @@ import { useChat } from '../hook/useChat';
 import styles from './Chat.module.scss';
 
 export default function Chat() {
-  const { messages, messageText, setMessageText, username, sendMessage, connected } = useChat();
+  const { messages, messageText, setMessageText, sendMessage, connected } =
+    useChat();
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   // Прокрутка вниз при новом сообщении
@@ -21,7 +22,11 @@ export default function Chat() {
         <div className={styles.header_status}>
           <span
             className={styles.header_statusDot}
-            style={{ backgroundColor: connected ? 'var(--success-color)' : 'var(--error-color)' }}
+            style={{
+              backgroundColor: connected
+                ? 'var(--success-color)'
+                : 'var(--error-color)',
+            }}
           />
           {connected ? 'Подключено' : 'Отключено'}
         </div>
@@ -31,10 +36,12 @@ export default function Chat() {
         {messages.map((m, i) => (
           <div
             key={i}
-            className={`${styles.message} ${m.sender === username ? styles.message_own : styles.message_other}`}
+            className={`${styles.message} ${m.sender ? styles.message_own : styles.message_other}`}
           >
             <div className={styles.message_bubble}>
-              {m.sender !== username && <div className={styles.message_sender}>{m.sender}</div>}
+              {m.sender && (
+                <div className={styles.message_sender}>{m.sender}</div>
+              )}
               <div className={styles.message_text}>{m.text}</div>
             </div>
           </div>
