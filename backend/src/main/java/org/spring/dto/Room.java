@@ -4,8 +4,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import java.util.LinkedHashMap;
-import java.util.Map;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @NoArgsConstructor
 @Getter
@@ -16,7 +17,7 @@ public class Room {
 
     private String name;
 
-    private final Map<String, PlayerState> players = new LinkedHashMap<>();
+    private List<String> players=new ArrayList<>();
 
     private Boolean isFull;
 

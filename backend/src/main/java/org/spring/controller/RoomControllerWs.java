@@ -16,6 +16,7 @@ import java.security.Principal;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Controller
@@ -50,10 +51,16 @@ public class RoomControllerWs {
         template.convertAndSendToUser(principal.getName(), "/errors", error);
     }
 
+    /** Генерация уникального короткого ID комнаты */
+    private String generateRoomId() {
+        // короткий уникальный id
+        return UUID.randomUUID().toString().substring(0, 8);
+    }
+
     /**
      * Создание новой игровой комнаты.
      * Запрос на маршрут: /app/room.create
-     * Ответ отправляется на маршрут "/user/room.created"
+     * Ответ отправляется на маршрут "/user/queue/room.created" и
      * {
      * "id" : "1ead51a1",
      * "name" "Комната +username"
@@ -65,18 +72,18 @@ public class RoomControllerWs {
      */
     @MessageMapping("/room.create")
     public void createRoom(Principal principal) throws JsonProcessingException {
+        log.info("/app/room.create зашел");
         if (principal == null) {
             log.error("Пользователь не авторизован");
             return;
         }
-        String username = principal.getName();
-        GameState gs = gameService.createRoom(username);
-        Room room = new Room(gs.getRoomId(), "Комната " + principal.getName(), false);
+        String creatorName = principal.getName();
+        Room room = new Room(generateRoomId(), "Комната " + creatorName, false);
+        room.getPlayers().add(principal.getName());
         rooms.put(room.getId(), room);
-        // send STATE_UPDATE только создателю: используем user-queue
-        template.convertAndSendToUser(username, "/room.created", room.toString());
+        template.convertAndSendToUser(creatorName, "/queue/room.created", room);
         broadcastUpdatedRooms();
-        log.info("/room.create отправил пользователю {} по пути /room.created объект Room {}", username, objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(room));
+        log.info("/app/room.create отработал");
     }
 
     /**
@@ -95,6 +102,8 @@ public class RoomControllerWs {
      */
     @MessageMapping("/room.join")
     public void joinRoom(@Payload JoinRequest req, Principal principal) {
+
+        log.info("/app/room.join зашел");
 
         if (principal == null) {
             log.error("Пользователь не авторизован");
@@ -128,6 +137,7 @@ public class RoomControllerWs {
         } catch (IllegalStateException ex) {
             sendErrorToUser(principal, ex.getMessage());
         }
+        log.info("/app/room.join отработал");
     }
     /**
      * Запрос на маршрут: /app/room.list
@@ -141,7 +151,9 @@ public class RoomControllerWs {
      */
     @MessageMapping("/room.list")
     public Collection<Room> listRooms() {
+        log.info("/app/room.list зашел");
         broadcastUpdatedRooms();
+        log.info("/app/room.list отработал");
         return rooms.values();
     }
 
@@ -159,9 +171,11 @@ public class RoomControllerWs {
      */
     @MessageMapping("/room.leave")
     public void leaveRoom(@Payload JoinRequest req, Principal principal) {
+        log.info("/app/room.leave зашел");
         Room room = rooms.get(req.roomId());
         room.getPlayers().remove(principal.getName());
         broadcastUpdatedRooms();
+        log.info("/app/room.leave отработал");
     }
 
     /**
@@ -177,9 +191,11 @@ public class RoomControllerWs {
      */
     @MessageMapping("/room.delete")
     public void deleteRoom(@Payload JoinRequest req) {
+        log.info("/app/room.delete зашел");
         Room removed = rooms.remove(req.roomId());
         if (removed != null){
             broadcastUpdatedRooms();
         }
+        log.info("/app/room.delete отработал");
     }
 }

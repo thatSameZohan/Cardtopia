@@ -35,14 +35,14 @@ public class GameService {
     /**
      * Создаёт новую игровую комнату.
      *
-     * @param creatorId ID создателя комнаты
+     * @param creatorName ID создателя комнаты
      * @return объект {@link GameState} с созданной комнатой
      */
-    public GameState createRoom(String creatorId) {
+    public GameState createRoom(String creatorName) {
         String roomId = generateRoomId();
         GameState gs = new GameState(roomId);
-        PlayerState p = new PlayerState(creatorId);
-        gs.getPlayers().put(creatorId, p);
+        PlayerState p = new PlayerState(creatorName);
+        gs.getPlayers().put(creatorName, p);
         gs.setStatus(GameStatus.WAITING_FOR_PLAYER);
         games.put(roomId, gs);
         log.info("Комната с ID {} создана", roomId);
