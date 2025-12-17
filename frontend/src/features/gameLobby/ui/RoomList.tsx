@@ -7,7 +7,8 @@ import { useEffect } from 'react';
 
 export default function RoomList() {
   const router = useRouter();
-  const { rooms, createRoom, joinRoom, connected, deleteRoom, newRoomId } = useRooms();
+  const { rooms, createRoom, joinRoom, connected, deleteRoom, newRoomId } =
+    useRooms();
 
   const handleJoinRoom = async (roomId: string) => {
     const id = await joinRoom(roomId);
@@ -16,16 +17,20 @@ export default function RoomList() {
   const handleCreateRoom = () => {
     createRoom();
   };
-  useEffect(() => {
-    if (newRoomId) {
-      router.push(`/room/${newRoomId}`);
-    }
-  }, [newRoomId]);
+  // useEffect(() => {
+  //   if (newRoomId) {
+  //     router.push(`/room/${newRoomId}`);
+  //   }
+  // }, [newRoomId]);
   return (
     <div className={styles.roomListContainer}>
       <div className={styles.header}>
         <h2 className={styles.title}>Доступные комнаты</h2>
-        <button className={styles.createRoomButton} onClick={handleCreateRoom} disabled={!connected}>
+        <button
+          className={styles.createRoomButton}
+          onClick={handleCreateRoom}
+          disabled={!connected}
+        >
           Создать комнату
         </button>
       </div>
@@ -39,11 +44,15 @@ export default function RoomList() {
               onClick={() => handleJoinRoom(room.id)}
             >
               <span className={styles.roomName}>{room.name}</span>
-              <span className={styles.participantCount}>{room.participantsCount}/2</span>
+              <span className={styles.participantCount}>
+                {room.participantsCount}/2
+              </span>
             </li>
           ))
         ) : (
-          <p className={styles.noRooms}>Нет доступных комнат. Создайте первую!</p>
+          <p className={styles.noRooms}>
+            Нет доступных комнат. Создайте первую!
+          </p>
         )}
       </ul>
     </div>

@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { useRouter } from 'next/navigation';
 
-import { setTokens, logout } from '@/redux/auth/authSlice';
+import { setTokens, logout, restoreSession } from '@/redux/auth/authSlice';
 import { useLazyGetMeQuery } from '@/redux/api';
 import { useRefreshTokenMutation } from '@/redux/auth/auth';
 import { toast } from 'react-toastify';
@@ -20,7 +20,11 @@ export function useRestoreSession() {
       try {
         // Пытаемся получить текущего пользователя
         const meResult = await getMe().unwrap();
-        dispatch(setTokens({ accessToken: '', username: meResult.username })); // accessToken только для UI, если нужно
+        dispatch(
+          restoreSession({
+            username: meResult.username,
+          }),
+        );
       } catch (err: any) {
         // Если 401/403 → пробуем обновить accessToken
         if (err?.status === 401 || err?.status === 403) {

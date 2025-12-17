@@ -18,8 +18,8 @@
     "commit": "cz",
     "prepare": "husky",
     "fsd": "steiger ./src",
-    "dev:docker": "docker-compose -f ../docker-compose.dev.yml up --build",
-    "docker:down": "docker-compose -f ../docker-compose.dev.yml down"
+    "docker:up": "docker compose -f ../docker-compose.dev.yml up",
+    "docker:rebuild": "docker compose -f ../docker-compose.dev.yml up --build"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

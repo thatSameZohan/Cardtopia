@@ -20,7 +20,10 @@ export const authApi = api.injectEndpoints({
         method: 'POST',
         body,
       }),
-      onQueryStarted: async (_, { dispatch, queryFulfilled, getCacheEntry }) => {
+      onQueryStarted: async (
+        _,
+        { dispatch, queryFulfilled, getCacheEntry },
+      ) => {
         try {
           const { data } = await queryFulfilled;
           toast.success('Вы успешно вошли в систему');
@@ -61,9 +64,15 @@ export const authApi = api.injectEndpoints({
         try {
           const { data } = await queryFulfilled;
           if (data) {
-            dispatch(setTokens({ accessToken: data.accessToken }));
-            const meData = await dispatch(api.endpoints.getMe.initiate()).unwrap();
-            dispatch(setTokens({ accessToken: data.accessToken, username: meData.username }));
+            const meData = await dispatch(
+              api.endpoints.getMe.initiate(),
+            ).unwrap();
+            dispatch(
+              setTokens({
+                accessToken: data.accessToken,
+                username: meData.username,
+              }),
+            );
           }
         } catch (error) {
           dispatch(logout({ noRedirect: true }));
@@ -88,4 +97,9 @@ export const authApi = api.injectEndpoints({
   }),
 });
 
-export const { useLoginMutation, useRegisterMutation, useRefreshTokenMutation, useLogoutMutation } = authApi;
+export const {
+  useLoginMutation,
+  useRegisterMutation,
+  useRefreshTokenMutation,
+  useLogoutMutation,
+} = authApi;

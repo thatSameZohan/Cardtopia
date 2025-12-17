@@ -18,9 +18,18 @@ const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
-    setTokens(state, action: PayloadAction<{ accessToken: string; username?: string }>) {
+    setTokens(
+      state,
+      action: PayloadAction<{ accessToken: string; username?: string }>,
+    ) {
       state.accessToken = action.payload.accessToken;
       if (action.payload.username) state.username = action.payload.username;
+      state.isAuth = true;
+      state.isInitialLoad = false;
+    },
+    restoreSession(state, action: PayloadAction<{ username: string }>) {
+      // accessToken НЕ трогаем
+      state.username = action.payload.username;
       state.isAuth = true;
       state.isInitialLoad = false;
     },
@@ -31,7 +40,9 @@ const authSlice = createSlice({
         state.isAuth = false;
         state.isInitialLoad = false;
       },
-      prepare(payload: { noRedirect?: boolean; noRedirectLink?: boolean } = {}) {
+      prepare(
+        payload: { noRedirect?: boolean; noRedirectLink?: boolean } = {},
+      ) {
         return { payload };
       },
     },
@@ -41,5 +52,6 @@ const authSlice = createSlice({
   },
 });
 
-export const { setTokens, logout, setInitialLoad } = authSlice.actions;
+export const { setTokens, logout, setInitialLoad, restoreSession } =
+  authSlice.actions;
 export default authSlice.reducer;

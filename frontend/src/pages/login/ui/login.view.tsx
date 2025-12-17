@@ -1,4 +1,5 @@
-import { LoginForm } from 'features/auth';
+import { LoginForm } from "@/features/auth";
+
 
 export function LoginView() {
   return <LoginForm />;
