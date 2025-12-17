@@ -1,11 +1,9 @@
 package org.spring.controller;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.spring.dto.JoinRequest;
 import org.spring.dto.Room;
-import org.spring.service.impl.GameService;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -22,7 +20,6 @@ import java.util.concurrent.ConcurrentHashMap;
 public class RoomControllerWs {
 
     private final SimpMessagingTemplate template;
-    private final GameService gameService;
 
     private final Map<String, Room> rooms = new ConcurrentHashMap<>();
 
@@ -44,7 +41,7 @@ public class RoomControllerWs {
         if (principal == null){
             return;
         }
-        template.convertAndSendToUser(principal.getName(), "/errors", error);
+        template.convertAndSendToUser(principal.getName(), "/queue/errors", error);
     }
 
     /** Генерация уникального короткого ID комнаты */
@@ -67,7 +64,7 @@ public class RoomControllerWs {
      * @param principal авторизованный пользователь
      */
     @MessageMapping("/room.create")
-    public void createRoom(Principal principal) throws JsonProcessingException {
+    public void createRoom(Principal principal) {
         log.info("/app/room.create зашел");
         if (principal == null) {
             log.error("Пользователь не авторизован");
@@ -126,7 +123,14 @@ public class RoomControllerWs {
             return;
         }
 
-        rooms.get(req.roomId()).getPlayers().add(principal.getName());
+        if (room.getPlayers().contains(principal.getName())) {
+            sendErrorToUser(principal, "You is already in the room");
+            log.error("Player is already in room");
+        }
+
+        room.getPlayers().add(principal.getName());
+
+        room.setIsFull(true);
 
         broadcastUpdatedRooms();
 
