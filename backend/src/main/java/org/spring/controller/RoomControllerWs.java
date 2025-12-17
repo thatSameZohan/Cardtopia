@@ -41,7 +41,7 @@ public class RoomControllerWs {
         if (principal == null){
             return;
         }
-        template.convertAndSendToUser(principal.getName(), "/queue/errors", error);
+        template.convertAndSend("/user/queue/errors", error);
     }
 
     /** Генерация уникального короткого ID комнаты */
@@ -74,7 +74,7 @@ public class RoomControllerWs {
         Room room = new Room(generateRoomId(), "Комната " + creatorName, false);
         room.getPlayers().add(principal.getName());
         rooms.put(room.getId(), room);
-        template.convertAndSendToUser(creatorName, "/queue/room.created", room);
+        template.convertAndSend("user/queue/room.created", room);
         broadcastUpdatedRooms();
         log.info("/app/room.create отработал");
     }
@@ -126,6 +126,7 @@ public class RoomControllerWs {
         if (room.getPlayers().contains(principal.getName())) {
             sendErrorToUser(principal, "You is already in the room");
             log.error("Player is already in room");
+            return;
         }
 
         room.getPlayers().add(principal.getName());
@@ -172,6 +173,11 @@ public class RoomControllerWs {
         log.info("/app/room.leave зашел");
         Room room = rooms.get(req.roomId());
         room.getPlayers().remove(principal.getName());
+
+        if (room.getPlayers().isEmpty()) {
+            rooms.remove(room.getId());
+        }
+
         broadcastUpdatedRooms();
         log.info("/app/room.leave отработал");
     }
