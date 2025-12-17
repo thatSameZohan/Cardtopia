@@ -38,13 +38,13 @@ public class RoomControllerWs {
     }
 
     /**
-     * Ответ в виде СТРОКИ отправляется на маршрут "/user/queue/errors/"
+     * Ответ в виде СТРОКИ отправляется на маршрут "/user/queue/errors"
      */
     private void sendErrorToUser(Principal principal, String error) {
         if (principal == null){
             return;
         }
-        template.convertAndSendToUser(principal.getName(),"/queue/errors/", error);
+        template.convertAndSendToUser(principal.getName(),"/queue/errors", error);
     }
 
     /** Генерация уникального короткого ID комнаты */
@@ -79,7 +79,7 @@ public class RoomControllerWs {
                 sendErrorToUser(principal, "Вы уже находитесь в комнате");
                 log.error("Пользователь уже находится в комнате");
                 return;
-            };
+            }
         }
         Room room = new Room(generateRoomId(), "Комната " + creatorName, false);
         room.getPlayers().add(creatorName);
