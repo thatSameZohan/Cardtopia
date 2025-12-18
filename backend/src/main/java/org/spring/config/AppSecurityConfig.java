@@ -1,8 +1,9 @@
 package org.spring.config;
 
 import lombok.RequiredArgsConstructor;
-import org.spring.service.impl.JpaUserDetailsService;
-import org.spring.service.impl.JwtService;
+import org.spring.security.JpaUserDetailsService;
+import org.spring.security.JwtAuthenticationFilter;
+import org.spring.security.JwtService;
 import org.springframework.context.annotation.*;
 import org.springframework.security.authentication.*;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;

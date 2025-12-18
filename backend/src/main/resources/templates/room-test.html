@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Room WS Tester (JWT)</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7/bundles/stomp.umd.min.js"></script>
+
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 900px; }
+        input, textarea, button { padding: 6px; margin: 4px 0; }
+        textarea, button { width: 100%; }
+        button { cursor: pointer; }
+
+        #log {
+            border: 1px solid #ccc;
+            height: 220px;
+            overflow-y: auto;
+            padding: 10px;
+            background: #fafafa;
+        }
+
+        .ok { color: green; }
+        .err { color: red; }
+        .stomp { color: #666; font-size: 12px; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 6px;
+            text-align: center;
+        }
+
+        th {
+            background: #f0f0f0;
+        }
+
+        .full {
+            background: #ffecec;
+        }
+    </style>
+</head>
+<body>
+
+<h3>Room WebSocket Tester</h3>
+
+<label>Access Token (JWT)</label>
+<textarea id="token" rows="3" placeholder="eyJhbGciOiJIUzI1NiJ9..."></textarea>
+
+<button onclick="connect()">Connect</button>
+<button onclick="disconnect()">Disconnect</button>
+
+<h4>Rooms</h4>
+<table>
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Players</th>
+        <th>Full</th>
+        <th>Actions</th>
+    </tr>
+    </thead>
+    <tbody id="roomsTable"></tbody>
+</table>
+
+<h4>Logs</h4>
+<div id="log"></div>
+
+<script>
+    let client = null;
+
+    function log(msg, type = "") {
+        const div = document.createElement("div");
+        div.className = type;
+        div.textContent = new Date().toLocaleTimeString() + " — " + msg;
+        const box = document.getElementById("log");
+        box.appendChild(div);
+        box.scrollTop = box.scrollHeight;
+    }
+
+    function authHeader() {
+        const token = document.getElementById("token").value.trim();
+        if (!token) return null;
+        return token.startsWith("Bearer ") ? token : "Bearer " + token;
+    }
+
+    function connect() {
+        const auth = authHeader();
+        if (!auth) {
+            log("Access token is empty", "err");
+            return;
+        }
+
+        const socket = new SockJS("http://localhost:8080/ws");
+
+        client = new StompJs.Client({
+            webSocketFactory: () => socket,
+            connectHeaders: { Authorization: auth },
+            debug: msg => log("[STOMP] " + msg, "stomp"),
+
+            onConnect: () => {
+                log("Connected", "ok");
+
+                client.subscribe("/topic/rooms", msg => {
+                    renderRooms(JSON.parse(msg.body));
+                });
+
+                client.subscribe("/user/queue/errors", msg => {
+                    log("ERROR: " + msg.body, "err");
+                });
+
+                client.subscribe("/user/queue/room.created", msg => {
+                    log("ROOM CREATED: " + msg.body, "ok");
+                });
+
+                // сразу запросить список
+                client.publish({ destination: "/app/room.list" });
+            },
+
+            onStompError: frame => {
+                log("STOMP ERROR: " + frame.headers["message"], "err");
+            }
+        });
+
+        client.activate();
+    }
+
+    function disconnect() {
+        if (client) {
+            client.deactivate();
+            log("Disconnected");
+            document.getElementById("roomsTable").innerHTML = "";
+        }
+    }
+
+    function renderRooms(rooms) {
+        const tbody = document.getElementById("roomsTable");
+        tbody.innerHTML = "";
+
+        rooms.forEach(room => {
+            const tr = document.createElement("tr");
+            if (room.isFull) tr.classList.add("full");
+
+            tr.innerHTML = `
+                <td>${room.id}</td>
+                <td>${room.name}</td>
+                <td>${room.players.join(", ")}</td>
+                <td>${room.isFull}</td>
+                <td>
+                    <button onclick="joinRoom('${room.id}')">Join</button>
+                    <button onclick="leaveRoom('${room.id}')">Leave</button>
+                    <button onclick="deleteRoom('${room.id}')">Delete</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function createRoom() {
+        publish("/app/room.create");
+    }
+
+    function joinRoom(roomId) {
+        sendRoomPayload("/app/room.join", roomId);
+    }
+
+    function leaveRoom(roomId) {
+        sendRoomPayload("/app/room.leave", roomId);
+    }
+
+    function deleteRoom(roomId) {
+        sendRoomPayload("/app/room.delete", roomId);
+    }
+
+    function publish(dest) {
+        if (!client || !client.connected) {
+            log("Not connected", "err");
+            return;
+        }
+        log("SEND " + dest);
+        client.publish({ destination: dest });
+    }
+
+    function sendRoomPayload(dest, roomId) {
+        if (!client || !client.connected) {
+            log("Not connected", "err");
+            return;
+        }
+
+        log("SEND " + dest + " {roomId:" + roomId + "}");
+        client.publish({
+            destination: dest,
+            body: JSON.stringify({ roomId })
+        });
+    }
+</script>
+
+<button onclick="createRoom()">Create Room</button>
+
+</body>
+</html>

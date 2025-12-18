@@ -21,10 +21,13 @@ public class Room {
 
     private Boolean isFull;
 
-    public Room(String id, String name, Boolean isFull) {
+    private String creatorName;
+
+    public Room(String id, String name, Boolean isFull, String creatorName) {
         this.id = id;
         this.name = name;
         this.isFull = isFull;
+        this.creatorName = creatorName;
     }
 
     @JsonProperty("participantsCount")

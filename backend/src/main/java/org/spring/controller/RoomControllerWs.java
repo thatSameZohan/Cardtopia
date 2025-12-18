@@ -2,7 +2,7 @@ package org.spring.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.spring.dto.JoinRequest;
+import org.spring.dto.RoomRequest;
 import org.spring.dto.Room;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
@@ -20,16 +20,19 @@ import java.util.concurrent.ConcurrentHashMap;
 public class RoomControllerWs {
 
     private final SimpMessagingTemplate template;
-
     private final Map<String, Room> rooms = new ConcurrentHashMap<>();
 
+    /* ========================= UTIL ========================= */
+
     /**
+     * Обновить текущие комнаты
      * Ответ в виде JSON отправляется на маршрут "/topic/rooms"
      * [{
      * "id" : "1ead51a1",
      * "name" "Комната +username"
      * "players" : [ "user" ]
      * "isFull" : false
+     * "creatorName": user
      * }]
      */
     private void broadcastUpdatedRooms() {
@@ -38,13 +41,54 @@ public class RoomControllerWs {
     }
 
     /**
-     * Ответ в виде СТРОКИ отправляется на маршрут "/user/queue/errors"
+     * Отправка ошибки пользователю в виде СТРОКИ на маршрут "/user/queue/errors"
      */
-    private void sendErrorToUser(Principal principal, String error) {
+    private void sendError(Principal principal, String message) {
         if (principal == null){
             return;
         }
-        template.convertAndSendToUser(principal.getName(),"/queue/errors", error);
+        template.convertAndSendToUser(principal.getName(),"/queue/errors", message);
+    }
+
+    /**
+     * Проверка авторизации
+     */
+    private boolean requireAuth(Principal principal) {
+        if (principal == null) {
+            log.error("Пользователь не авторизован");
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Получить комнату по ID или отправить ошибку
+     */
+    private Room getRoomOrSendError(String roomId, Principal principal) {
+        if (roomId == null) {
+            sendError(principal, "Room ID пустой");
+            return null;
+        }
+        Room room = rooms.get(roomId);
+        if (room == null) {
+            sendError(principal, "Комнаты с таким ID не существует");
+        }
+        return room;
+    }
+
+    /**
+     * Проверка есть ли пользователь в других комнатах
+     */
+    private boolean isUserInAnyRoom(String username) {
+        return rooms.values().stream()
+                .anyMatch(r -> r.getPlayers().contains(username));
+    }
+
+    /**
+     * Изменение флага заполненности комнаты
+     */
+    private void updateRoomState(Room room) {
+        room.setIsFull(room.getPlayers().size() >= 2);
     }
 
     /** Генерация уникального короткого ID комнаты */
@@ -52,6 +96,8 @@ public class RoomControllerWs {
         // короткий уникальный id
         return UUID.randomUUID().toString().substring(0, 8);
     }
+
+    /* ========================= API ========================= */
 
     /**
      * Создание новой игровой комнаты.
@@ -62,90 +108,151 @@ public class RoomControllerWs {
      * "name" "Комната +username"
      * "players" : [ "user" ]
      * "isFull" : false
+     * "creatorName": user
      * }
      *
      * @param principal авторизованный пользователь
      */
     @MessageMapping("/room.create")
     public void createRoom(Principal principal) {
+
         log.info("/app/room.create зашел");
-        if (principal == null) {
-            log.error("Пользователь не авторизован");
+
+        if (!requireAuth(principal)) {
             return;
         }
+
         String creatorName = principal.getName();
-        for (Room room : rooms.values()) {
-            if (room.getPlayers().contains(creatorName)){
-                sendErrorToUser(principal, "Вы уже находитесь в комнате");
-                log.error("Пользователь уже находится в комнате");
-                return;
-            }
+
+        if (isUserInAnyRoom(creatorName)) {
+            sendError(principal, "Вы уже находитесь в комнате");
+            return;
         }
-        Room room = new Room(generateRoomId(), "Комната " + creatorName, false);
+
+        Room room = new Room (generateRoomId(), "Комната " + creatorName, false, creatorName);
         room.getPlayers().add(creatorName);
         rooms.put(room.getId(), room);
-        template.convertAndSendToUser(principal.getName(),"/queue/room.created", room);
+
+        template.convertAndSendToUser(creatorName,"/queue/room.created", room);
         broadcastUpdatedRooms();
+
         log.info("/app/room.create отработал");
     }
 
     /**
      * Присоединение текущего игрока к комнате.
-     * <p>
-     * Запрос на маршрут: /app/room.join
-     * Ответ отправляется на маршрут "/topic/rooms"
-     * [{
-     * "id" : "1ead51a1",
-     * "name" "Комната +username"
-     * "players" : [ "user" ]
-     * "isFull" : false
-     * }]
-     * @param  req {@link JoinRequest} {roomId (String)}
+     * @param  req {@link RoomRequest} {roomId (String)}
      * @param principal авторизованный пользователь
      */
     @MessageMapping("/room.join")
-    public void joinRoom(@Payload JoinRequest req, Principal principal) {
+    public void joinRoom(@Payload RoomRequest req, Principal principal) {
 
         log.info("/app/room.join зашел");
 
-        if (principal == null) {
-            log.error("Пользователь не авторизован");
+        if (!requireAuth(principal)) {
             return;
         }
 
-        if (req == null || req.roomId() == null) {
-            sendErrorToUser(principal, "roomId пустой");
-            log.error("roomId пустой");
-            return;
-        }
+        String username = principal.getName();
 
-        Room room = rooms.get(req.roomId());
-
+        Room room = getRoomOrSendError(req.roomId(), principal);
         if (room == null) {
-            sendErrorToUser(principal, "Комнаты с таким ID не существует");
-            log.error("Комнаты с таким ID не существует");
             return;
         }
 
         if (room.getPlayers().size() >= 2) {
-            sendErrorToUser(principal, "Комната заполнена");
+            sendError(principal, "Комната заполнена");
             log.error("Комната заполнена");
             return;
         }
 
         if (room.getPlayers().contains(principal.getName())) {
-            sendErrorToUser(principal, "Вы уже находитесь в комнате");
-            log.error("Игрок уже находится в комнате");
+            sendError(principal, "Вы уже находитесь в этой комнате");
+            log.error("Пользователь уже находится в комнате {}", room.getId());
+            return;
+        }
+        if (isUserInAnyRoom(username)) {
+            sendError(principal, "Вы уже находитесь в другой комнате");
+            log.error("Пользователь уже находится в другой комнате");
             return;
         }
 
-        room.getPlayers().add(principal.getName());
+        room.getPlayers().add(username);
 
-        room.setIsFull(true);
+        updateRoomState(room);
 
         broadcastUpdatedRooms();
 
         log.info("/app/room.join отработал");
+    }
+
+    /**
+     * Запрос на маршрут: /app/room.leave
+     * @param  req {@link RoomRequest} {roomId (String)}
+     * @param principal авторизованный пользователь
+     */
+    @MessageMapping("/room.leave")
+    public void leaveRoom(@Payload RoomRequest req, Principal principal) {
+        log.info("/app/room.leave зашел");
+
+        if (!requireAuth(principal)) {
+            return;
+        }
+
+        String username = principal.getName();
+
+        Room room = getRoomOrSendError(req.roomId(), principal);
+        if (room == null) {
+            return;
+        }
+
+        if (!room.getPlayers().remove(username)) {
+            sendError(principal, "Вы не находитесь в этой комнате");
+            log.error("Пользователь {} не находитесь в комнате {}", principal.getName(), room.getId());
+            return;
+        }
+
+        if (room.getPlayers().isEmpty()) {
+            rooms.remove(room.getId());
+        } else {
+            updateRoomState(room);
+        }
+
+        broadcastUpdatedRooms();
+
+        log.info("/app/room.leave отработал");
+    }
+
+    /**
+     * Запрос на маршрут: /app/room.delete
+     * @param  req {@link RoomRequest} {roomId (String)}
+     * @param principal авторизованный пользователь
+     */
+    @MessageMapping("/room.delete")
+    public void deleteRoom(@Payload RoomRequest req, Principal principal) {
+
+        log.info("/app/room.delete зашел");
+
+        if (!requireAuth(principal)) {
+            return;
+        }
+
+        Room room = getRoomOrSendError(req.roomId(), principal);
+        if (room == null) {
+            return;
+        }
+
+        if (!room.getCreatorName().equals(principal.getName())) {
+            sendError(principal, "Вы не можете удалить комнату");
+            log.error("Пользователь {} не является создателем комнаты {} , которую пытается удалить", principal.getName(), room.getId());
+            return;
+        }
+
+        rooms.remove(room.getId());
+
+        broadcastUpdatedRooms();
+
+        log.info("/app/room.delete отработал");
     }
 
     /**
@@ -156,6 +263,7 @@ public class RoomControllerWs {
      * "name" "Комната +username"
      * "players" : [ "user" ]
      * "isFull" : false
+     * "creatorName": user
      * }]
      */
     @MessageMapping("/room.list")
@@ -166,52 +274,16 @@ public class RoomControllerWs {
         return rooms.values();
     }
 
-    /**
-     * Запрос на маршрут: /app/room.leave
-     * Ответ отправляется на маршрут "/topic/rooms"
-     * [{
-     * "id" : "1ead51a1",
-     * "name" "Комната +username"
-     * "players" : [ "user" ]
-     * "isFull" : false
-     * }]
-     * @param  req {@link JoinRequest} {roomId (String)}
-     * @param principal авторизованный пользователь
-     */
-    @MessageMapping("/room.leave")
-    public void leaveRoom(@Payload JoinRequest req, Principal principal) {
-        log.info("/app/room.leave зашел");
-        Room room = rooms.get(req.roomId());
-        room.getPlayers().remove(principal.getName());
+    public void leaveAllRooms(String username) {
 
-        if (room.getPlayers().isEmpty()) {
-            rooms.remove(room.getId());
-        }
+        rooms.values().forEach(room -> room.getPlayers().remove(username));
 
-        room.setIsFull(false);
+        rooms.entrySet().removeIf(e -> e.getValue().getPlayers().isEmpty());
+
+        rooms.values().forEach(this::updateRoomState);
 
         broadcastUpdatedRooms();
-        log.info("/app/room.leave отработал");
-    }
 
-    /**
-     * Запрос на маршрут: /app/room.delete
-     * Ответ отправляется на маршрут "/topic/rooms"
-     * [{
-     * "id" : "1ead51a1",
-     * "name" "Комната +username"
-     * "players" : [ "user" ]
-     * "isFull" : false
-     * }]
-     * @param  req {@link JoinRequest} {roomId (String)}
-     */
-    @MessageMapping("/room.delete")
-    public void deleteRoom(@Payload JoinRequest req) {
-        log.info("/app/room.delete зашел");
-        Room removed = rooms.remove(req.roomId());
-        if (removed != null){
-            broadcastUpdatedRooms();
-        }
-        log.info("/app/room.delete отработал");
+        log.info("User {} removed from all rooms", username);
     }
 }

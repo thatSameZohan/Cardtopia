@@ -1,4 +1,4 @@
-package org.spring.service.impl;
+package org.spring.security;
 
 import org.spring.model.PersonEntity;
 import org.spring.repository.PersonRepository;

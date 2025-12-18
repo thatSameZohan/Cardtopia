@@ -1,6 +1,6 @@
-package org.spring.config;
+package org.spring.websocket;
 
-import org.spring.service.impl.JwtService;
+import org.spring.security.JwtService;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.stomp.StompCommand;

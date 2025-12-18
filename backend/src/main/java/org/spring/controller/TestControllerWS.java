@@ -15,7 +15,7 @@ public class TestControllerWS {
 
     @GetMapping("/room")
     public String testRoom(){
-        return "room.html";
+        return "room-test.html";
     }
 
     @GetMapping("/game")
