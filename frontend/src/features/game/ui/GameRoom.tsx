@@ -1,75 +1,91 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import React, { useEffect } from 'react';
-import { useGameRoom } from '../hook/useGameRoom';
-import { useWSContext } from '@/shared/ui/WSProvider/WSProvider';
+import React, { useEffect, useCallback, useRef } from 'react';
+import Cookies from 'js-cookie';
 
-interface GameRoomProps {
+import { useRooms } from '@/features/gameLobby/hook/useRooms';
+import { routes } from '@/shared/router/paths';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/redux/store';
+
+type Props = {
   roomId: string;
-}
+};
 
-export default function GameRoom({ roomId }: GameRoomProps) {
+const COOKIE_KEY = 'room_instance';
+
+export default function GameRoom({ roomId }: Props) {
   const router = useRouter();
-  const { publish } = useWSContext();
-  const {
-    messages,
-    leaveRoom,
-    roomInfo,
-    endTurn,
-    turn,
-    myParticipantId,
-    isMyTurn,
-  } = useGameRoom(roomId);
+  const { leaveRoom, connected, rooms } = useRooms();
+  const username = useSelector((state: RootState) => state.auth.username);
 
-  const waitingForSecondPlayer = roomInfo && roomInfo?.participantsCount < 2;
+  const room = rooms.find((r) => r.id === roomId);
+
+  const waitingForSecondPlayer = room?.participantsCount === 1;
+  const isUserInRoom = !!(room && username && room.players.includes(username));
+
+  //Защита от повторного leave
+  const isLeavingRef = useRef(false);
+
+  const safeLeave = useCallback(() => {
+    if (isLeavingRef.current) return;
+    isLeavingRef.current = true;
+    leaveRoom(roomId);
+  }, [leaveRoom, roomId]);
+
+  const leaveAndExit = useCallback(() => {
+    safeLeave();
+    Cookies.remove(COOKIE_KEY);
+    router.replace(routes.homepage);
+  }, [safeLeave, router]);
 
   useEffect(() => {
-    if (roomInfo?.participantsCount === 2) {
-      // Начало игры, когда оба игрока подключены
-      publish(`/app/room/${roomId}/start`);
+    Cookies.set(COOKIE_KEY, roomId);
+  }, [roomId]);
+
+  useEffect(() => {
+    if (room && username && !room.players.includes(username)) {
+      Cookies.remove(COOKIE_KEY);
+      router.replace(routes.homepage);
     }
-  }, [roomInfo?.participantsCount, roomId]);
+  }, [room, username, router]);
 
-  if (roomInfo && roomInfo?.participantsCount > 2) {
-    return (
-      <div>
-        <p>Комната полна. Вы не можете присоединиться.</p>
-        <button onClick={() => router.back()}>Вернуться назад</button>
-      </div>
-    );
-  }
+  useEffect(() => {
+    const onPopState = () => {
+      safeLeave();
+      Cookies.remove(COOKIE_KEY);
+    };
 
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, [safeLeave]);
   return (
     <div>
-      <h1>Game Room ID: {roomId}</h1>
-      {waitingForSecondPlayer ? (
-        <p>Ожидаем второго игрока…</p>
-      ) : (
-        <p>Игра начинается!</p>
-      )}
-      <h2>Ходит: {turn}</h2>
-      <button disabled={!isMyTurn} onClick={endTurn}>
-        Сделать ход
-      </button>
-      <button
-        onClick={() => {
-          leaveRoom();
-          router.back();
-        }}
-      >
-        Покинуть комнату
-      </button>
-      <div>
-        <h3>Сообщения:</h3>
-        <ul>
-          {messages.map((msg, idx) => (
-            <li key={idx}>
-              {msg.type}: {JSON.stringify(msg.payload)}
-            </li>
-          ))}
-        </ul>
-      </div>
+      <h1>
+        Room: {roomId}{' '}
+        <span
+          style={{
+            width: 10,
+            height: 10,
+            display: 'inline-block',
+            borderRadius: '50%',
+            backgroundColor: connected ? 'green' : 'red',
+            transition: 'background-color 0.2s ease',
+          }}
+        />
+      </h1>
+      <h2>{username}</h2>
+
+      <p>
+        {connected && isUserInRoom
+          ? waitingForSecondPlayer
+            ? 'Ожидаем второго игрока…'
+            : 'Игра началась'
+          : 'Соединение отсутствует'}
+      </p>
+
+      <button onClick={leaveAndExit}>Покинуть комнату</button>
     </div>
   );
 }

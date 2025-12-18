@@ -18,7 +18,6 @@ export const useChat = () => {
     subscriptionRef.current = subscribe('/topic/chat', (msg) => {
       try {
         const m = JSON.parse(msg.body);
-        console.log(m, 'mm');
         setMessages((prev) => [...prev, m]);
       } catch (e) {
         console.error('useChat: invalid message', msg.body);
