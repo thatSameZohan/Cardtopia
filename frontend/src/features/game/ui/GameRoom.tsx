@@ -8,6 +8,10 @@ import { useRooms } from '@/features/gameLobby/hook/useRooms';
 import { routes } from '@/shared/router/paths';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/redux/store';
+import { GameRoomHeader } from './GameRoomHeader';
+import { GameRoomStatus } from './GameRoomStatus';
+import { GameView } from './game/GameView';
+import { useWSContext } from '@/shared/ui/WSProvider/WSProvider';
 
 type Props = {
   roomId: string;
@@ -15,9 +19,10 @@ type Props = {
 
 const COOKIE_KEY = 'room_instance';
 
-export default function GameRoom({ roomId }: Props) {
+export function GameRoom({ roomId }: Props) {
   const router = useRouter();
   const { leaveRoom, connected, rooms } = useRooms();
+  const { publish } = useWSContext();
   const username = useSelector((state: RootState) => state.auth.username);
 
   const room = rooms.find((r) => r.id === roomId);
@@ -60,30 +65,31 @@ export default function GameRoom({ roomId }: Props) {
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
   }, [safeLeave]);
+  console.log(room?.creatorName === username, '22222');
   return (
     <div>
-      <h1>
-        Room: {roomId}{' '}
-        <span
-          style={{
-            width: 10,
-            height: 10,
-            display: 'inline-block',
-            borderRadius: '50%',
-            backgroundColor: connected ? 'green' : 'red',
-            transition: 'background-color 0.2s ease',
-          }}
-        />
-      </h1>
-      <h2>{username}</h2>
+      <GameRoomHeader
+        roomId={roomId}
+        connected={connected}
+        username={username ?? ''}
+      />
+      <GameRoomStatus
+        connected={connected}
+        waiting={waitingForSecondPlayer}
+        isUserInRoom={isUserInRoom}
+      />
 
-      <p>
-        {connected && isUserInRoom
-          ? waitingForSecondPlayer
-            ? 'Ожидаем второго игрока…'
-            : 'Игра началась'
-          : 'Соединение отсутствует'}
-      </p>
+      <div style={{ margin: '10px 0' }}>
+        {room?.creatorName === username && (
+          <button
+            onClick={() => publish('/app/game.create', JSON.stringify(room))}
+          >
+            Начать игру
+          </button>
+        )}
+      </div>
+
+      {room && <GameView room={room} />}
 
       <button onClick={leaveAndExit}>Покинуть комнату</button>
     </div>

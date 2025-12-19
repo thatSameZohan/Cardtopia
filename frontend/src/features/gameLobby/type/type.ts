@@ -4,4 +4,5 @@ export type Room = {
   isFull: boolean;
   participantsCount: number;
   players: string[];
+  creatorName: string;
 };

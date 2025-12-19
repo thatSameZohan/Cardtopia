@@ -1,4 +1,4 @@
-import GameRoom from '@/features/game/ui/GameRoom';
+import { GameRoom } from '@/features/game';
 import { Metadata } from 'next';
 
 export async function generateMetadata(): Promise<Metadata> {

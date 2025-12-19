@@ -31,6 +31,7 @@ export const useRooms = () => {
       `/user/queue/room.created`,
       (message: IMessage) => {
         const room = JSON.parse(message.body);
+        console.log(room, 'useRooms');
         setRoom(room);
         if (!room.id) {
           toast.error('Ошибка при создании комнаты');
