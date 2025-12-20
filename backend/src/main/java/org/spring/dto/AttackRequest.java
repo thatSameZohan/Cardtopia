@@ -1,4 +1,4 @@
 package org.spring.dto;
 
-public record AttackRequest(String roomId) {
+public record AttackRequest(String gameId) {
 }

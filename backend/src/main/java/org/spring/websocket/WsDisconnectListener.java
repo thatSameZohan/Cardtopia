@@ -2,7 +2,7 @@ package org.spring.websocket;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.spring.controller.RoomControllerWs;
+import org.spring.service.RoomService;
 import org.springframework.context.event.EventListener;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.stereotype.Component;
@@ -13,7 +13,7 @@ import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 @Slf4j
 public class WsDisconnectListener {
 
-    private final RoomControllerWs roomController;
+    private final RoomService roomService;
 
     @EventListener
     public void onDisconnect(SessionDisconnectEvent event) {
@@ -25,6 +25,6 @@ public class WsDisconnectListener {
 
         log.info("WS disconnect: {}", username);
 
-        roomController.leaveAllRooms(username);
+//        roomService.leaveAllRooms(username);
     }
 }

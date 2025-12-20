@@ -12,19 +12,26 @@ import java.util.*;
 @ToString
 public class GameState {
 
-    private final String roomId;
-    private GameStatus status;
+    private final String id;
     private final Map<String, PlayerState> players = new LinkedHashMap<>();
-    private String activePlayerId;
-    private final List<Card> marketDeck = new LinkedList<>();
-    private final List<Card> market = new ArrayList<>(); // 5 visible cards
 
-    public GameState(String roomId) {
-        this.roomId = roomId;
-        this.status = GameStatus.WAITING_FOR_PLAYER;
+    private GameStatus status;
+    private String activePlayerId;
+
+    private final Deque<Card> marketDeck = new ArrayDeque<>();
+    private final List<Card> market = new ArrayList<>(5);
+
+    public GameState(String id) {
+        this.id = id;
+        this.status = GameStatus.IN_PROGRESS;
     }
 
-    public Collection<String> getPlayerIds() {
-        return players.keySet();
+    public PlayerState getPlayer(String playerId) {
+        return players.get(playerId);
+    }
+
+    public boolean isPlayersTurn(String playerId) {
+        return playerId.equals(activePlayerId);
     }
 }
+

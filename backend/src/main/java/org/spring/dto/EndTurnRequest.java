@@ -1,4 +1,4 @@
 package org.spring.dto;
 
-public record EndTurnRequest(String roomId) {
+public record EndTurnRequest(String gameId) {
 }

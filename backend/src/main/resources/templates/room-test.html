@@ -2,207 +2,104 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Room WS Tester (JWT)</title>
+    <title>Rooms</title>
 
     <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7/bundles/stomp.umd.min.js"></script>
 
     <style>
-        body { font-family: Arial, sans-serif; padding: 20px; max-width: 900px; }
-        input, textarea, button { padding: 6px; margin: 4px 0; }
-        textarea, button { width: 100%; }
-        button { cursor: pointer; }
-
-        #log {
-            border: 1px solid #ccc;
-            height: 220px;
-            overflow-y: auto;
-            padding: 10px;
-            background: #fafafa;
-        }
-
-        .ok { color: green; }
-        .err { color: red; }
-        .stomp { color: #666; font-size: 12px; }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-        }
-
-        th, td {
-            border: 1px solid #ddd;
-            padding: 6px;
-            text-align: center;
-        }
-
-        th {
-            background: #f0f0f0;
-        }
-
-        .full {
-            background: #ffecec;
-        }
+        body { font-family: Arial; padding: 20px }
+        .room { border: 1px solid #ccc; padding: 8px; margin: 6px 0 }
+        button { margin-right: 5px }
     </style>
 </head>
 <body>
 
-<h3>Room WebSocket Tester</h3>
+<h3>Rooms</h3>
 
-<label>Access Token (JWT)</label>
-<textarea id="token" rows="3" placeholder="eyJhbGciOiJIUzI1NiJ9..."></textarea>
+<button onclick="createRoom()">Create room</button>
 
-<button onclick="connect()">Connect</button>
-<button onclick="disconnect()">Disconnect</button>
-
-<h4>Rooms</h4>
-<table>
-    <thead>
-    <tr>
-        <th>ID</th>
-        <th>Name</th>
-        <th>Players</th>
-        <th>Full</th>
-        <th>Actions</th>
-    </tr>
-    </thead>
-    <tbody id="roomsTable"></tbody>
-</table>
-
-<h4>Logs</h4>
-<div id="log"></div>
+<div id="rooms"></div>
 
 <script>
-    let client = null;
+    const token = localStorage.getItem("accessToken");
+    if (!token) alert("Нет accessToken");
 
-    function log(msg, type = "") {
-        const div = document.createElement("div");
-        div.className = type;
-        div.textContent = new Date().toLocaleTimeString() + " — " + msg;
-        const box = document.getElementById("log");
-        box.appendChild(div);
-        box.scrollTop = box.scrollHeight;
-    }
+    const client = new StompJs.Client({
+        webSocketFactory: () => new SockJS("http://localhost:8080/ws"),
+        connectHeaders: { Authorization: "Bearer " + token },
+        onConnect: () => {
+            client.subscribe("/topic/rooms", msg => renderRooms(JSON.parse(msg.body)));
 
-    function authHeader() {
-        const token = document.getElementById("token").value.trim();
-        if (!token) return null;
-        return token.startsWith("Bearer ") ? token : "Bearer " + token;
-    }
+            client.subscribe("/user/queue/errors", msg => alert(msg.body));
 
-    function connect() {
-        const auth = authHeader();
-        if (!auth) {
-            log("Access token is empty", "err");
-            return;
+            client.subscribe("/topic/game.start", () => {}); // заглушка
+
+            client.publish({ destination: "/app/room.list" });
         }
+    });
 
-        const socket = new SockJS("http://localhost:8080/ws");
-
-        client = new StompJs.Client({
-            webSocketFactory: () => socket,
-            connectHeaders: { Authorization: auth },
-            debug: msg => log("[STOMP] " + msg, "stomp"),
-
-            onConnect: () => {
-                log("Connected", "ok");
-
-                client.subscribe("/topic/rooms", msg => {
-                    renderRooms(JSON.parse(msg.body));
-                });
-
-                client.subscribe("/user/queue/errors", msg => {
-                    log("ERROR: " + msg.body, "err");
-                });
-
-                client.subscribe("/user/queue/room.created", msg => {
-                    log("ROOM CREATED: " + msg.body, "ok");
-                });
-
-                // сразу запросить список
-                client.publish({ destination: "/app/room.list" });
-            },
-
-            onStompError: frame => {
-                log("STOMP ERROR: " + frame.headers["message"], "err");
-            }
-        });
-
-        client.activate();
-    }
-
-    function disconnect() {
-        if (client) {
-            client.deactivate();
-            log("Disconnected");
-            document.getElementById("roomsTable").innerHTML = "";
-        }
-    }
+    client.activate();
 
     function renderRooms(rooms) {
-        const tbody = document.getElementById("roomsTable");
-        tbody.innerHTML = "";
+        const div = document.getElementById("rooms");
+        div.innerHTML = "";
 
-        rooms.forEach(room => {
-            const tr = document.createElement("tr");
-            if (room.isFull) tr.classList.add("full");
-
-            tr.innerHTML = `
-                <td>${room.id}</td>
-                <td>${room.name}</td>
-                <td>${room.players.join(", ")}</td>
-                <td>${room.isFull}</td>
-                <td>
-                    <button onclick="joinRoom('${room.id}')">Join</button>
-                    <button onclick="leaveRoom('${room.id}')">Leave</button>
-                    <button onclick="deleteRoom('${room.id}')">Delete</button>
-                </td>
+        rooms.forEach(r => {
+            const d = document.createElement("div");
+            d.className = "room";
+            d.innerHTML = `
+                <b>${r.name}</b><br>
+                Players: ${r.players.join(", ")}<br>
+                <button onclick="join('${r.id}')">Join</button>
+                <button onclick="leave('${r.id}')">Leave</button>
+                <button onclick="del('${r.id}')">Delete</button>
+                <button onclick="start('${r.id}')">Start</button>
             `;
-            tbody.appendChild(tr);
+            div.appendChild(d);
+
+            client.subscribe("/topic/game.start." + r.id, msg => {
+                const data = JSON.parse(msg.body);
+                localStorage.setItem("gameId", data.gameId);
+                localStorage.setItem("roomId", r.id);
+                window.location.href = "/test/game";
+            });
         });
     }
 
     function createRoom() {
-        publish("/app/room.create");
+        client.publish({ destination: "/app/room.create" });
     }
 
-    function joinRoom(roomId) {
-        sendRoomPayload("/app/room.join", roomId);
-    }
-
-    function leaveRoom(roomId) {
-        sendRoomPayload("/app/room.leave", roomId);
-    }
-
-    function deleteRoom(roomId) {
-        sendRoomPayload("/app/room.delete", roomId);
-    }
-
-    function publish(dest) {
-        if (!client || !client.connected) {
-            log("Not connected", "err");
-            return;
-        }
-        log("SEND " + dest);
-        client.publish({ destination: dest });
-    }
-
-    function sendRoomPayload(dest, roomId) {
-        if (!client || !client.connected) {
-            log("Not connected", "err");
-            return;
-        }
-
-        log("SEND " + dest + " {roomId:" + roomId + "}");
+    function join(id) {
+        localStorage.setItem("roomId", id);
         client.publish({
-            destination: dest,
-            body: JSON.stringify({ roomId })
+            destination: "/app/room.join",
+            body: JSON.stringify({ roomId: id })
+        });
+    }
+
+    function leave(id) {
+        client.publish({
+            destination: "/app/room.leave",
+            body: JSON.stringify({ roomId: id })
+        });
+    }
+
+    function del(id) {
+        client.publish({
+            destination: "/app/room.delete",
+            body: JSON.stringify({ roomId: id })
+        });
+    }
+
+    function start(id) {
+        client.publish({
+            destination: "/app/game.start",
+            body: JSON.stringify({ roomId: id })
         });
     }
 </script>
-
-<button onclick="createRoom()">Create Room</button>
 
 </body>
 </html>

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Login WS Tester</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 400px; margin: auto; }
+        input, button { width: 100%; padding: 8px; margin: 8px 0; }
+        #log { border: 1px solid #ccc; padding: 10px; background: #fafafa; height: 150px; overflow-y: auto; }
+        .err { color: red; }
+        .ok { color: green; }
+    </style>
+</head>
+<body>
+
+<h3>Login</h3>
+
+<input type="text" id="username" placeholder="Username">
+<input type="password" id="password" placeholder="Password">
+<button onclick="login()">Login</button>
+
+<h4>Logs</h4>
+<div id="log"></div>
+
+<script>
+    function log(msg, type="") {
+        const d = document.createElement("div");
+        d.textContent = new Date().toLocaleTimeString() + " — " + msg;
+        d.className = type;
+        const box = document.getElementById("log");
+        box.appendChild(d);
+        box.scrollTop = box.scrollHeight;
+    }
+
+    async function login() {
+        const username = document.getElementById("username").value.trim();
+        const password = document.getElementById("password").value.trim();
+        if (!username || !password) {
+            log("Username or password is empty", "err");
+            return;
+        }
+
+        try {
+            const res = await fetch("/v1/api/auth/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username, password })
+            });
+
+            if (!res.ok) {
+                const err = await res.json();
+                log("Login failed: " + (err.message || res.status), "err");
+                return;
+            }
+
+            const data = await res.json();
+            const token = data.accessToken;
+            log("Login successful", "ok");
+
+            // сохраняем токен в localStorage
+            localStorage.setItem("accessToken", token);
+
+            // редирект на страницу теста комнаты
+            window.location.href = "/test/room";
+
+        } catch (e) {
+            log("Error: " + e.message, "err");
+        }
+    }
+</script>
+
+</body>
+</html>

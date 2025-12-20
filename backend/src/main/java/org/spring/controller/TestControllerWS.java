@@ -8,9 +8,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/test")
 public class TestControllerWS {
 
+    @GetMapping("/login")
+    public String testLogin(){
+        return "login-test.html";
+    }
+
     @GetMapping("/chat")
     public String testChat(){
-        return "chat.html";
+        return "chat-test.html";
     }
 
     @GetMapping("/room")
@@ -20,6 +25,6 @@ public class TestControllerWS {
 
     @GetMapping("/game")
     public String testGame(){
-        return "game.html";
+        return "game-test.html";
     }
 }

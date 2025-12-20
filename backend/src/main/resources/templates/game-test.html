@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Game</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7/bundles/stomp.umd.min.js"></script>
+
+    <style>
+        body { font-family: Arial; padding: 20px }
+        .active { background: #e6ffe6 }
+        .card { border: 1px solid #aaa; padding: 6px; margin: 4px }
+        .player {
+            padding: 6px;
+            margin: 4px 0;
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+
+<h3>Game</h3>
+
+<button onclick="attack()">Attack</button>
+<button onclick="endTurn()">End turn</button>
+
+<h4>Players</h4>
+<ul id="players"></ul>
+
+<h4>Your hand</h4>
+<div id="hand"></div>
+
+<h4>Market</h4>
+<div id="market"></div>
+
+<script>
+    const gameId = localStorage.getItem("gameId");
+    const token = localStorage.getItem("accessToken");
+
+    if (!gameId) {
+        alert("Нет gameId");
+        throw "";
+    }
+
+    const client = new StompJs.Client({
+        webSocketFactory: () => new SockJS("http://localhost:8080/ws"),
+        connectHeaders: { Authorization: "Bearer " + token },
+        onConnect: () => {
+            client.subscribe("/topic/game." + gameId, msg => {
+                render(JSON.parse(msg.body));
+            });
+
+            client.subscribe("/user/queue/errors", msg => alert(msg.body));
+        }
+    });
+
+    client.activate();
+
+    function render(gs) {
+        renderPlayers(gs);
+        renderHand(gs);
+        renderMarket(gs);
+    }
+
+    /* ================= PLAYERS ================= */
+
+    function renderPlayers(gs) {
+        const ul = document.getElementById("players");
+        ul.innerHTML = "";
+
+        Object.values(gs.players).forEach(p => {
+            const li = document.createElement("li");
+            li.className = "player";
+
+            li.innerHTML = `
+                <b>${p.playerId}</b><br>
+                HP: ${p.health}<br>
+                ATK: ${p.currentAttack}<br>
+                GOLD: ${p.currentGold}
+            `;
+
+            if (gs.activePlayerId === p.playerId) {
+                li.classList.add("active");
+            }
+
+            ul.appendChild(li);
+        });
+    }
+
+    /* ================= HAND ================= */
+
+    function renderHand(gs) {
+        const div = document.getElementById("hand");
+        div.innerHTML = "";
+
+        const me = gs.players[gs.activePlayerId];
+        if (!me) return;
+
+        me.hand.forEach(c => {
+            const d = document.createElement("div");
+            d.className = "card";
+            d.innerHTML = `
+                <b>${c.name}</b><br>
+                ATK:${c.attack} GOLD:${c.gold}<br>
+                <button onclick="play('${c.id}')">Play</button>
+            `;
+            div.appendChild(d);
+        });
+    }
+
+    /* ================= MARKET ================= */
+
+    function renderMarket(gs) {
+        const div = document.getElementById("market");
+        div.innerHTML = "";
+
+        gs.market.forEach(c => {
+            const d = document.createElement("div");
+            d.className = "card";
+            d.innerHTML = `
+                <b>${c.name}</b><br>
+                COST:${c.cost} ATK:${c.attack} GOLD:${c.gold}<br>
+                <button onclick="buy('${c.id}')">Buy</button>
+            `;
+            div.appendChild(d);
+        });
+    }
+
+    /* ================= ACTIONS ================= */
+
+    function play(id) {
+        client.publish({
+            destination: "/app/game.playCard",
+            body: JSON.stringify({ gameId, cardId: id })
+        });
+    }
+
+    function buy(id) {
+        client.publish({
+            destination: "/app/game.buyCard",
+            body: JSON.stringify({ gameId, marketCardId: id })
+        });
+    }
+
+    function attack() {
+        client.publish({
+            destination: "/app/game.attack",
+            body: JSON.stringify({ gameId })
+        });
+    }
+
+    function endTurn() {
+        client.publish({
+            destination: "/app/game.endTurn",
+            body: JSON.stringify({ gameId })
+        });
+    }
+</script>
+
+</body>
+</html>
