@@ -1,75 +1,97 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import React, { useEffect } from 'react';
-import { useGameRoom } from '../hook/useGameRoom';
+import React, { useEffect, useCallback, useRef } from 'react';
+import Cookies from 'js-cookie';
+
+import { useRooms } from '@/features/gameLobby/hook/useRooms';
+import { routes } from '@/shared/router/paths';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/redux/store';
+import { GameRoomHeader } from './GameRoomHeader';
+import { GameRoomStatus } from './GameRoomStatus';
+import { GameView } from './game/GameView';
 import { useWSContext } from '@/shared/ui/WSProvider/WSProvider';
 
-interface GameRoomProps {
+type Props = {
   roomId: string;
-}
+};
 
-export default function GameRoom({ roomId }: GameRoomProps) {
+const COOKIE_KEY = 'room_instance';
+
+export function GameRoom({ roomId }: Props) {
   const router = useRouter();
+  const { leaveRoom, connected, rooms } = useRooms();
   const { publish } = useWSContext();
-  const {
-    messages,
-    leaveRoom,
-    roomInfo,
-    endTurn,
-    turn,
-    myParticipantId,
-    isMyTurn,
-  } = useGameRoom(roomId);
+  const username = useSelector((state: RootState) => state.auth.username);
 
-  const waitingForSecondPlayer = roomInfo && roomInfo?.participantsCount < 2;
+  const room = rooms.find((r) => r.id === roomId);
+
+  const waitingForSecondPlayer = room?.participantsCount === 1;
+  const isUserInRoom = !!(room && username && room.players.includes(username));
+
+  //Защита от повторного leave
+  const isLeavingRef = useRef(false);
+
+  const safeLeave = useCallback(() => {
+    if (isLeavingRef.current) return;
+    isLeavingRef.current = true;
+    leaveRoom(roomId);
+  }, [leaveRoom, roomId]);
+
+  const leaveAndExit = useCallback(() => {
+    safeLeave();
+    Cookies.remove(COOKIE_KEY);
+    router.replace(routes.homepage);
+  }, [safeLeave, router]);
 
   useEffect(() => {
-    if (roomInfo?.participantsCount === 2) {
-      // Начало игры, когда оба игрока подключены
-      publish(`/app/room/${roomId}/start`);
+    Cookies.set(COOKIE_KEY, roomId);
+  }, [roomId]);
+
+  useEffect(() => {
+    if (room && username && !room.players.includes(username)) {
+      Cookies.remove(COOKIE_KEY);
+      router.replace(routes.homepage);
     }
-  }, [roomInfo?.participantsCount, roomId]);
+  }, [room, username, router]);
 
-  if (roomInfo && roomInfo?.participantsCount > 2) {
-    return (
-      <div>
-        <p>Комната полна. Вы не можете присоединиться.</p>
-        <button onClick={() => router.back()}>Вернуться назад</button>
-      </div>
-    );
-  }
+  useEffect(() => {
+    const onPopState = () => {
+      safeLeave();
+      Cookies.remove(COOKIE_KEY);
+    };
 
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, [safeLeave]);
+  console.log(room?.creatorName === username, '22222');
   return (
     <div>
-      <h1>Game Room ID: {roomId}</h1>
-      {waitingForSecondPlayer ? (
-        <p>Ожидаем второго игрока…</p>
-      ) : (
-        <p>Игра начинается!</p>
-      )}
-      <h2>Ходит: {turn}</h2>
-      <button disabled={!isMyTurn} onClick={endTurn}>
-        Сделать ход
-      </button>
-      <button
-        onClick={() => {
-          leaveRoom();
-          router.back();
-        }}
-      >
-        Покинуть комнату
-      </button>
-      <div>
-        <h3>Сообщения:</h3>
-        <ul>
-          {messages.map((msg, idx) => (
-            <li key={idx}>
-              {msg.type}: {JSON.stringify(msg.payload)}
-            </li>
-          ))}
-        </ul>
+      <GameRoomHeader
+        roomId={roomId}
+        connected={connected}
+        username={username ?? ''}
+      />
+      <GameRoomStatus
+        connected={connected}
+        waiting={waitingForSecondPlayer}
+        isUserInRoom={isUserInRoom}
+      />
+
+      <div style={{ margin: '10px 0' }}>
+        {room?.creatorName === username && (
+          <button
+            onClick={() => publish('/app/game.create', JSON.stringify(room))}
+          >
+            Начать игру
+          </button>
+        )}
       </div>
+
+      {room && <GameView room={room} />}
+
+      <button onClick={leaveAndExit}>Покинуть комнату</button>
     </div>
   );
 }

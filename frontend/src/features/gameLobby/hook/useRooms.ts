@@ -1,38 +1,43 @@
 import { useWSContext } from '@/shared/ui/WSProvider/WSProvider';
 import { StompSubscription, IMessage } from '@stomp/stompjs';
-import { useRef, useEffect, useState, useCallback } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { Room } from '../type/type';
 import { toast } from 'react-toastify';
+import { useRouter } from 'next/navigation';
 
 export const useRooms = () => {
   const { connected, subscribe, publish } = useWSContext();
   const [rooms, setRooms] = useState<Room[]>([]);
-  const [newRoomId, setNewRoomId] = useState();
+  const [room, setRoom] = useState<Room>();
   const roomsSub = useRef<StompSubscription | null>(null);
   const createdSub = useRef<StompSubscription | null>(null);
   const errorSub = useRef<StompSubscription | null>(null);
-
+  const router = useRouter();
   useEffect(() => {
     if (!connected) return;
 
     roomsSub.current = subscribe('/topic/rooms', (msg) => {
       const updated: Room[] = JSON.parse(msg.body);
-      console.log(JSON.parse(msg.body), '/topic/rooms');
-      setRooms(updated.filter((room) => !room.isFull)); // только здесь обновляем список комнат
+      setRooms(updated.filter((room) => room)); // только здесь обновляем список комнат
     });
 
-    errorSub.current = subscribe('/user/queue/errors', (msg) => {
-      const error = JSON.parse(msg.body);
-      toast.error(error);
-      console.log(error, '##########################');
+    errorSub.current = subscribe(`/user/queue/errors`, (msg: IMessage) => {
+      const text =
+        typeof msg.body === 'string' ? msg.body : JSON.stringify(msg.body);
+      toast.error(text);
     });
 
     createdSub.current = subscribe(
-      '/user/queue/room.created',
-      (room: IMessage) => {
-        const id = JSON.parse(room.body);
-        console.log(room.body, 'erterterterterteterte');
-        // setNewRoomId(id);
+      `/user/queue/room.created`,
+      (message: IMessage) => {
+        const room = JSON.parse(message.body);
+        console.log(room, 'useRooms');
+        setRoom(room);
+        if (!room.id) {
+          toast.error('Ошибка при создании комнаты');
+          return;
+        }
+        router.push(`/room/${room.id}`);
       },
     );
 
@@ -67,6 +72,6 @@ export const useRooms = () => {
     connected,
     deleteRoom,
     leaveRoom,
-    newRoomId,
+    room,
   };
 };

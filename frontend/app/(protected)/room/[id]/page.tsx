@@ -1,5 +1,9 @@
-import GameRoom from '@/features/game/ui/GameRoom';
+import { GameRoom } from '@/features/game';
+import { Metadata } from 'next';
 
-export default function RoomPage({ params }: { params: { id: string } }) {
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: 'Игра' };
+}
+export default async function RoomPage({ params }: { params: { id: string } }) {
   return <GameRoom roomId={params.id} />;
 }
