@@ -3,13 +3,14 @@ package org.spring.controller;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.spring.dto.*;
+import org.spring.enums.GameStatus;
+import org.spring.mapper.GameViewMapper;
 import org.spring.service.GameService;
 import org.spring.service.RoomService;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
-
 import java.security.Principal;
 import java.util.Map;
 import java.util.Optional;
@@ -23,6 +24,7 @@ public class GameControllerWS {
     private final GameService gameService;
     private final RoomService roomService;
     private final SimpMessagingTemplate template;
+    private final GameViewMapper gameViewMapper;
     private final Map<String, Object> gameLocks = new ConcurrentHashMap<>();
 
     /* ========================= API ========================= */
@@ -47,10 +49,10 @@ public class GameControllerWS {
 
             // Создаём игру с новым gameId
             GameState gs = roomService.startGame(req.roomId(), principal.getName());
-            String gameId = gs.getId(); // реальный gameId
+            String gameId = gs.getId();
 
-            // Отправляем всем в комнате полное состояние игры
-            template.convertAndSend("/topic/game." +gameId, gs);
+            // Отправляем всем в комнате персонализированное состояние игры
+            broadcastState(gs);
 
             // Отправляем инициатору игры реальные ID
             template.convertAndSendToUser(principal.getName(), "/queue/game.started", Map.of(
@@ -69,6 +71,16 @@ public class GameControllerWS {
         }
     }
 
+    @MessageMapping("/game.init")
+    public void initGame(@Payload InitGameRequest req, Principal principal) {
+
+        if (principal == null) return;
+
+        validateAndGetGame(req.gameId(), principal)
+                .ifPresent(gs -> {
+                    broadcastState(gs);
+                });
+    }
 
     @MessageMapping("/game.playCard")
     public void playCard(@Payload PlayCardRequest req, Principal principal) {
@@ -82,6 +94,10 @@ public class GameControllerWS {
         validateAndGetGame(req.gameId(), principal)
                 .ifPresent(gs -> {
                     synchronized (lockFor(gs.getId())) {
+                        if (gs.getStatus().equals(GameStatus.FINISHED)){
+                            sendError(principal, "Игра окончена");
+                            return;
+                        }
                         if (!gs.isPlayersTurn(principal.getName())) {
                             sendError(principal, "Не ваш ход");
                             log.error("У игрока {} нет хода", principal.getName());
@@ -105,6 +121,10 @@ public class GameControllerWS {
         validateAndGetGame(req.gameId(), principal)
                 .ifPresent(gs -> {
                     synchronized (lockFor(gs.getId())) {
+                        if (gs.getStatus().equals(GameStatus.FINISHED)){
+                            sendError(principal, "Игра окончена");
+                            return;
+                        }
                         if (!gs.isPlayersTurn(principal.getName())) {
                             sendError(principal, "Не ваш ход");
                             log.error("У игрока {} нет хода", principal.getName());
@@ -129,6 +149,10 @@ public class GameControllerWS {
         validateAndGetGame(req.gameId(), principal)
                 .ifPresent(gs -> {
                     synchronized (lockFor(gs.getId())) {
+                        if (gs.getStatus().equals(GameStatus.FINISHED)){
+                            sendError(principal, "Игра окончена");
+                            return;
+                        }
                         if (!gs.isPlayersTurn(principal.getName())) {
                             sendError(principal, "Не ваш ход");
                             log.error("У игрока {} нет хода", principal.getName());
@@ -152,6 +176,10 @@ public class GameControllerWS {
         validateAndGetGame(req.gameId(), principal)
                 .ifPresent(gs -> {
                     synchronized (lockFor(gs.getId())) {
+                        if (gs.getStatus().equals(GameStatus.FINISHED)){
+                            sendError(principal, "Игра окончена");
+                            return;
+                        }
                         if (!gs.isPlayersTurn(principal.getName())) {
                             sendError(principal, "Не ваш ход");
                             log.error("У игрока {} нет хода", principal.getName());
@@ -171,7 +199,17 @@ public class GameControllerWS {
     }
 
     private void broadcastState(GameState gs) {
-        template.convertAndSend("/topic/game." + gs.getId(), gs);
+
+        gs.getPlayers().keySet().forEach(username -> {
+
+            GameView view = gameViewMapper.toView(gs, username);
+
+            template.convertAndSendToUser(
+                    username,
+                    "/queue/game." + gs.getId(),
+                    view
+            );
+        });
     }
 
     /**

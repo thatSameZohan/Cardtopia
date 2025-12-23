@@ -28,9 +28,6 @@ public class GameServiceImpl implements GameService {
     /** Хранилище активных игр по gameId */
     private final Map<String, GameState> games = new ConcurrentHashMap<>();
 
-    /** Генератор случайных чисел для выбора активного игрока */
-    private final Random rnd = new Random();
-
     public GameState createGame (Room room, String creatorName) {
 
         String gameId =UUID.randomUUID().toString().substring(0, 8);
@@ -47,6 +44,10 @@ public class GameServiceImpl implements GameService {
     }
 
     public void playCard (GameState gs, String playerId, String cardId) {
+
+        if (isFinished(gs)){
+            return;
+        }
 
         PlayerState player = gs.getPlayers().get(playerId);
 
@@ -81,6 +82,10 @@ public class GameServiceImpl implements GameService {
 
     public void buyCard (GameState gs, String playerId, String marketCardId) {
 
+        if (isFinished(gs)){
+            return;
+        }
+
         PlayerState player = gs.getPlayers().get(playerId);
 
         if (player == null) {
@@ -104,21 +109,25 @@ public class GameServiceImpl implements GameService {
 
         player.setCurrentGold(player.getCurrentGold() - card.getCost());
 
-        player.getDiscardPile().add(card);
+        player.getDeck().add(card); // добавляем купленную карту в колоду игрока
 
-        // замена из магазина карт
+
         int idx = gs.getMarket().indexOf(card);
-        gs.getMarket().remove(idx);
+        gs.getMarket().remove(idx); // удаляем купленную карту из магазина
 
         if (!gs.getMarketDeck().isEmpty()) {
             Card replacement = gs.getMarketDeck().removeFirst();
-            gs.getMarket().add(idx, replacement);
+            gs.getMarket().add(idx, replacement); // замена из магазина карт
         }
         log.info("Карта куплена");
         log.info("Карты в руке для игрока {}, {}", player.getPlayerId(), player.getHand());
     }
 
     public void attack(GameState gs, String playerId) {
+
+        if (isFinished(gs)){
+            return;
+        }
 
         PlayerState player = gs.getPlayers().get(playerId);
 
@@ -139,19 +148,25 @@ public class GameServiceImpl implements GameService {
 
         PlayerState opponent = gs.getPlayers().get(opponentId);
 
-        opponent.setHealth(opponent.getHealth() - player.getCurrentAttack());
+        opponent.setHealth(opponent.getHealth() - player.getCurrentAttack()); // атака снимает хп с оппонента
 
-        player.setCurrentAttack(0);
+        player.setCurrentAttack(0); // обнуляется атака для игрока
 
         if (opponent.getHealth() <= 0) {
             gs.setStatus(GameStatus.FINISHED);
-            // winner = playerId, could store result
+            gs.setWinnerId(playerId);
+            // winner = playerId, в дальнейшем здесь можно сохранить результаты игры
+//            save(gs);
+//            games.remove(gs.getId());
         }
         log.info("Атака совершена, ваше здоровье {}, здоровье противника {}", player.getHealth(), opponent.getHealth());
     }
 
-
     public void endTurn(GameState gs, String playerId) {
+
+        if (isFinished(gs)){
+            return;
+        }
 
         PlayerState player = gs.getPlayers().get(playerId);
 
@@ -165,13 +180,12 @@ public class GameServiceImpl implements GameService {
         player.getHand().clear();
         player.getPlayedCards().clear();
         player.setCurrentAttack(0);
-        player.setCurrentGold(0);
 
         // передача хода
         String next = gs.getPlayers()
                 .keySet()
                 .stream()
-                .filter(id -> !id.equals(playerId))
+                .filter(id -> !gs.isPlayersTurn(id))
                 .findFirst().orElse(null);
 
         if (next == null) {
@@ -181,7 +195,7 @@ public class GameServiceImpl implements GameService {
 
         gs.setActivePlayerId(next);
 
-        // draw 5 for new active player
+        // взять 5 карт в руки следующему игроку
         PlayerState newActive = gs.getPlayers().get(next);
         drawCardsToHand(newActive, 5);
         log.info("Ход завершен для игрока {}", player.getPlayerId());
@@ -206,15 +220,13 @@ public class GameServiceImpl implements GameService {
      */
     private void initGame(GameState gs) {
         log.info("Инициализация игры...");
-        // create start decks (each 10 cards: 8 gold, 2 attack)
+        // create start decks (each 10 cards: 5 gold, 5 attack)
         for (PlayerState p : gs.getPlayers().values()) {
             List<Card> deck = new ArrayList<>();
             for (int i = 0; i < 5; i++) deck.add(Card.goldCard());
             for (int i = 0; i < 5; i++) deck.add(Card.attackCard());
             Collections.shuffle(deck);
             p.setDeck(new LinkedList<>(deck));
-            // draw 3 start cards
-            drawCardsToHand(p, 3);
         }
         log.info("Стартовые колоды созданы");
         // market deck (pool). Для простоты используем 30 карт смешанных
@@ -234,8 +246,9 @@ public class GameServiceImpl implements GameService {
 
         // рандомное определение игрока для хода
         List<String> ids = new ArrayList<>(gs.getPlayers().keySet());
-        gs.setActivePlayerId(ids.get(rnd.nextInt(ids.size())));
-        log.info("Рандомно определен игрок для хода {}", gs.getActivePlayerId());
+        gs.setActivePlayerId(ids.get(new Random().nextInt(ids.size())));
+        drawCardsToHand (gs.getActivePlayer(), 5);
+        log.info("Рандомно определен игрок для хода {}, который взял в руки 5 карт из колоды", gs.getActivePlayerId());
         log.info("Инициализация игры завершена");
     }
 
@@ -261,5 +274,11 @@ public class GameServiceImpl implements GameService {
         log.info("Карты в руке для игрока {} {}", p.getPlayerId(), p.getHand());
     }
 
-
+    private boolean isFinished(GameState gs) {
+        if (gs.getStatus().equals(GameStatus.FINISHED)) {
+            log.error("Игра окончена");
+            return true;
+        }
+        return false;
+    }
 }
