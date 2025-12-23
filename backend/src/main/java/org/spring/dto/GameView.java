@@ -10,6 +10,5 @@ public record GameView(
         GameStatus status,
         List<PlayerView> players,
         List<Card> market,
-        PlayerPrivateView you,
         String winnerId
 ) {}

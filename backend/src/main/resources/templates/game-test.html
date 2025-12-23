@@ -11,8 +11,8 @@
         body { font-family: Arial; padding: 20px }
         .active { background: #e6ffe6 }
         .card { border: 1px solid #aaa; padding: 6px; margin: 4px }
-        .game-over { color: red; font-weight: bold; font-size: 18px }
-        button:disabled { opacity: 0.4 }
+        .played { background: #f0f0f0 }
+        .winner { color: green; font-weight: bold }
     </style>
 </head>
 <body>
@@ -21,17 +21,17 @@
 
 <div id="status"></div>
 
-<button id="attackBtn" onclick="attack()">Attack</button>
-<button id="endTurnBtn" onclick="endTurn()">End turn</button>
+<button onclick="attack()">Attack</button>
+<button onclick="endTurn()">End turn</button>
 
 <h4>Players</h4>
 <ul id="players"></ul>
 
-<h4>Your stats</h4>
-<div id="youStats"></div>
-
 <h4>Your hand</h4>
 <div id="hand"></div>
+
+<h4>Played cards</h4>
+<div id="played"></div>
 
 <h4>Market</h4>
 <div id="market"></div>
@@ -40,23 +40,32 @@
     const gameId = localStorage.getItem("gameId");
     const token = localStorage.getItem("accessToken");
 
-    if (!gameId) {
-        alert("Нет gameId");
-        throw "";
-    }
+    let gameView = null;
+    let privateView = null;
 
     const client = new StompJs.Client({
         webSocketFactory: () => new SockJS("http://localhost:8080/ws"),
         connectHeaders: { Authorization: "Bearer " + token },
+
         onConnect: () => {
+
+            // 🔹 общее состояние
+            client.subscribe("/topic/game." + gameId, msg => {
+                gameView = JSON.parse(msg.body);
+                render();
+            });
+
+            // 🔹 приватное состояние
             client.subscribe("/user/queue/game." + gameId, msg => {
-                render(JSON.parse(msg.body));
+                privateView = JSON.parse(msg.body);
+                render();
             });
 
             client.subscribe("/user/queue/errors", msg => {
                 console.log("ERROR:", msg.body);
             });
 
+            // первичная инициализация
             client.publish({
                 destination: "/app/game.init",
                 body: JSON.stringify({ gameId })
@@ -66,55 +75,45 @@
 
     client.activate();
 
-    function render(gs) {
-        renderStatus(gs);
-        renderPlayers(gs);
-        renderYou(gs);
-        renderHand(gs);
-        renderMarket(gs);
-        toggleControls(gs.status);
-    }
+    function render() {
+        if (!gameView) return;
 
-    function renderStatus(gs) {
-        const div = document.getElementById("status");
-        if (gs.status === "FINISHED") {
-            div.innerHTML = `<div class="game-over">
-                GAME OVER<br>
-                Winner: ${gs.winnerId ?? "unknown"}
-            </div>`;
-        } else {
-            div.innerText = `Active player: ${gs.activePlayerId}`;
+        renderStatus();
+        renderPlayers();
+        renderMarket();
+
+        if (privateView) {
+            renderHand();
+            renderPlayed();
         }
     }
 
-    function renderPlayers(gs) {
+    function renderStatus() {
+        const div = document.getElementById("status");
+        div.innerHTML = `
+            Status: ${gameView.status}
+            ${gameView.winnerId ? `<div class="winner">Winner: ${gameView.winnerId}</div>` : ""}
+        `;
+    }
+
+    function renderPlayers() {
         const ul = document.getElementById("players");
         ul.innerHTML = "";
-        gs.players.forEach(p => {
+
+        gameView.players.forEach(p => {
             const li = document.createElement("li");
             li.className = p.active ? "active" : "";
             li.textContent =
-                `${p.playerId} | HP:${p.health} | Hand:${p.handSize} | Deck:${p.deckSize} | ` +
-                `Discard:${p.discardSize} | ATK:${p.currentAttack} | GOLD:${p.currentGold}`;
+                `${p.playerId} | HP:${p.health} | ATK:${p.currentAttack} | GOLD:${p.currentGold} | HAND:${p.handSize}`;
             ul.appendChild(li);
         });
     }
 
-    function renderYou(gs) {
-        const div = document.getElementById("youStats");
-        if (!gs.you) {
-            div.innerText = "";
-            return;
-        }
-        div.innerText = `Your hand: ${gs.you.hand.length} cards`;
-    }
-
-    function renderHand(gs) {
+    function renderHand() {
         const div = document.getElementById("hand");
         div.innerHTML = "";
-        if (!gs.you) return;
 
-        gs.you.hand.forEach(c => {
+        privateView.hand.forEach(c => {
             const d = document.createElement("div");
             d.className = "card";
             d.innerHTML = `
@@ -125,10 +124,23 @@
         });
     }
 
-    function renderMarket(gs) {
+    function renderPlayed() {
+        const div = document.getElementById("played");
+        div.innerHTML = "";
+
+        privateView.playedCards.forEach(c => {
+            const d = document.createElement("div");
+            d.className = "card played";
+            d.textContent = `${c.name} (ATK:${c.attack}, GOLD:${c.gold})`;
+            div.appendChild(d);
+        });
+    }
+
+    function renderMarket() {
         const div = document.getElementById("market");
         div.innerHTML = "";
-        gs.market.forEach(c => {
+
+        gameView.market.forEach(c => {
             const d = document.createElement("div");
             d.className = "card";
             d.innerHTML = `
@@ -139,23 +151,17 @@
         });
     }
 
-    function toggleControls(status) {
-        const disabled = status === "FINISHED";
-        document.getElementById("attackBtn").disabled = disabled;
-        document.getElementById("endTurnBtn").disabled = disabled;
-    }
-
-    function play(id) {
+    function play(cardId) {
         client.publish({
             destination: "/app/game.playCard",
-            body: JSON.stringify({ gameId, cardId: id })
+            body: JSON.stringify({ gameId, cardId })
         });
     }
 
-    function buy(id) {
+    function buy(marketCardId) {
         client.publish({
             destination: "/app/game.buyCard",
-            body: JSON.stringify({ gameId, marketCardId: id })
+            body: JSON.stringify({ gameId, marketCardId })
         });
     }
 

@@ -6,21 +6,17 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 @Component
-public class GameViewMapper {
+public class ViewMapper {
 
-    public GameView toView(GameState gs, String viewer) {
+    public PrivatePlayerView toPrivatePlayerView (PlayerState player){
+        return new PrivatePlayerView (player.getHand(),player.getPlayedCards());
+    }
+
+    public GameView toGameView(GameState gs) {
 
         List<PlayerView> players = gs.getPlayers().values().stream()
                 .map(p -> toPlayerView(p, gs))
                 .toList();
-
-        PlayerState me = gs.getPlayers().get(viewer);
-
-        PlayerPrivateView you = me == null ? null :
-                new PlayerPrivateView(
-                        List.copyOf(me.getHand()),
-                        List.copyOf(me.getPlayedCards())
-                );
 
         return new GameView(
                 gs.getId(),
@@ -28,7 +24,6 @@ public class GameViewMapper {
                 gs.getStatus(),
                 players,
                 List.copyOf(gs.getMarket()),
-                you,
                 gs.getWinnerId()
         );
     }

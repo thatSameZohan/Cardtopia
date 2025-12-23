@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.spring.dto.*;
 import org.spring.enums.GameStatus;
-import org.spring.mapper.GameViewMapper;
+import org.spring.mapper.ViewMapper;
 import org.spring.service.GameService;
 import org.spring.service.RoomService;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -24,7 +24,7 @@ public class GameControllerWS {
     private final GameService gameService;
     private final RoomService roomService;
     private final SimpMessagingTemplate template;
-    private final GameViewMapper gameViewMapper;
+    private final ViewMapper viewMapper;
     private final Map<String, Object> gameLocks = new ConcurrentHashMap<>();
 
     /* ========================= API ========================= */
@@ -198,17 +198,23 @@ public class GameControllerWS {
         return gameLocks.computeIfAbsent(gameId, id -> new Object());
     }
 
+    /**
+     * Отправка состояния игры общее и приватное
+     */
     private void broadcastState(GameState gs) {
+
+        template.convertAndSend("/topic/game." + gs.getId(), viewMapper.toGameView(gs));
 
         gs.getPlayers().keySet().forEach(username -> {
 
-            GameView view = gameViewMapper.toView(gs, username);
+            PlayerState player = gs.getPlayers().get(username);
 
-            template.convertAndSendToUser(
-                    username,
-                    "/queue/game." + gs.getId(),
-                    view
-            );
+            if (player == null) {
+                log.error("Игрок не существует");
+                return;
+            }
+
+            template.convertAndSendToUser(username, "/queue/game." + gs.getId(), viewMapper.toPrivatePlayerView(player));
         });
     }
 
