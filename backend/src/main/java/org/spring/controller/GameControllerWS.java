@@ -149,22 +149,22 @@ public class GameControllerWS {
 
     @MessageExceptionHandler(GameCommonException.class)
     @SendToUser("/queue/errors")
-    public ErrorResponse handleGameException(GameCommonException ex) {
-        log.error("Ошибка игры: {}", ex.getMessage());
-        return new ErrorResponse(ex.getCode(), ex.getMessage());
+    public ErrorResponse handleGameException(GameCommonException exc) {
+        log.error("Ошибка игры: {}", exc.getMessage());
+        return new ErrorResponse(exc.getCode(), exc.getMessage());
     }
 
     @MessageExceptionHandler(RoomCommonException.class)
     @SendToUser("/queue/errors")
-    public ErrorResponse handleRoomException(RoomCommonException ex) {
-        log.error("Ошибка комнаты: {}", ex.getMessage());
-        return new ErrorResponse(ex.getCode(), ex.getMessage());
+    public ErrorResponse handleRoomException(RoomCommonException exc) {
+        log.error("Ошибка комнаты: {}", exc.getMessage());
+        return new ErrorResponse(exc.getCode(), exc.getMessage());
     }
 
     @MessageExceptionHandler(Exception.class)
     @SendToUser("/queue/errors")
-    public ErrorResponse handleGenericException(Exception ex) {
-        log.error("Необработанная ошибка: ", ex);
+    public ErrorResponse handleGenericException(Exception exc) {
+        log.error("Необработанная ошибка: ", exc);
         return new ErrorResponse("INTERNAL_ERROR", "Произошла внутренняя ошибка сервера");
     }
 }

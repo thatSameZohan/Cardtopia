@@ -122,9 +122,9 @@ public class RoomControllerWS {
      */
     @MessageExceptionHandler(RoomCommonException.class)
     @SendToUser("/queue/errors")
-    public ErrorResponse handleRoomException (RoomCommonException exс) {
-        log.error("Ошибка комнаты: {}", exс.getMessage());
-        return new ErrorResponse(exс.getCode(), exс.getMessage());
+    public ErrorResponse handleRoomException (RoomCommonException exc) {
+        log.error("Ошибка комнаты: {}", exc.getMessage());
+        return new ErrorResponse(exc.getCode(), exc.getMessage());
     }
 
     /**
@@ -132,8 +132,8 @@ public class RoomControllerWS {
      */
     @MessageExceptionHandler(Exception.class)
     @SendToUser("/queue/errors")
-    public ErrorResponse handleGenericException(Exception exс) {
-        log.error("Необработанная ошибка: ", exс);
+    public ErrorResponse handleGenericException(Exception exc) {
+        log.error("Необработанная ошибка: ", exc);
         return new ErrorResponse("INTERNAL_ERROR", "Произошла внутренняя ошибка сервера");
     }
 }
