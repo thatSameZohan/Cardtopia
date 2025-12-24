@@ -39,11 +39,11 @@ dependencies {
 
     runtimeOnly 'org.postgresql:postgresql'
 
-//    testCompileOnly("org.projectlombok:lombok:1.18.42")
-//    testAnnotationProcessor("org.projectlombok:lombok:1.18.42")
-//    testImplementation 'org.springframework.security:spring-security-test'
-//    testImplementation 'org.springframework.boot:spring-boot-starter-test'
-//	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testCompileOnly("org.projectlombok:lombok:1.18.42")
+    testAnnotationProcessor("org.projectlombok:lombok:1.18.42")
+    testImplementation 'org.springframework.security:spring-security-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 tasks.withType(Javadoc).configureEach {
@@ -58,6 +58,7 @@ tasks.withType(Javadoc).configureEach {
     // Java 17
     options.addBooleanOption('html5', true)
 }
-//tasks.named('test') {
-//	useJUnitPlatform()
-//}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
