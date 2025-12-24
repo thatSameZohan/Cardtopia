@@ -1,34 +1,70 @@
-import { Room } from '@/features/gameLobby/type/type';
 import { useWSContext } from '@/shared/ui/WSProvider/WSProvider';
 import { StompSubscription } from '@stomp/stompjs';
-import { useRef, useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { GameState } from '../type/type';
 
-export interface GameMessage {
-  type: string;
-  payload: any;
-}
-
-export const useGame = (room: Room) => {
+export const useGame = (gameId: string | null) => {
   const { connected, subscribe, publish } = useWSContext();
 
-  const gameSub = useRef<StompSubscription | null>(null);
-  const [messages, setMessages] = useState<GameMessage[]>([]);
+  const [gameState, setGameState] = useState<GameState | null>(null);
+
+  const queueSubRef = useRef<StompSubscription | null>(null);
+  const topicSubRef = useRef<StompSubscription | null>(null);
 
   useEffect(() => {
-    if (!connected) return;
+    if (!connected || !gameId) return;
+    // защита от повторных подписок
+    queueSubRef.current?.unsubscribe();
+    topicSubRef.current?.unsubscribe();
 
-    gameSub.current?.unsubscribe();
-    gameSub.current = subscribe(`/topic/game/${room.id}`, (msg) => {
+    // 1️⃣ initial snapshot (personal)
+    queueSubRef.current = subscribe(`/user/queue/game.${gameId}`, (msg) => {
       try {
-        const parsed: GameMessage = JSON.parse(msg.body);
-        setMessages((prev) => [...prev, parsed]);
-      } catch {
-        console.error('Invalid game message:', msg.body);
+        setGameState(JSON.parse(msg.body));
+      } catch (e) {
+        console.error('[useGame] queue parse error', e);
       }
     });
 
-    return () => gameSub.current?.unsubscribe();
-  }, [connected, room.id, subscribe]);
+    // 2️⃣ updates (broadcast)
+    topicSubRef.current = subscribe(`/topic/game.${gameId}`, (msg) => {
+      try {
+        setGameState(JSON.parse(msg.body));
+      } catch (e) {
+        console.error('[useGame] topic parse error', e);
+      }
+    });
 
-  return { messages };
+    // 3️⃣ запрос initial state
+    publish('/app/game.init', JSON.stringify({ gameId }));
+
+    return () => {
+      queueSubRef.current?.unsubscribe();
+      topicSubRef.current?.unsubscribe();
+      queueSubRef.current = null;
+      topicSubRef.current = null;
+    };
+  }, [connected, gameId, subscribe, publish]);
+
+  /* ===== ACTIONS ===== */
+
+  const playCard = (cardId: string) =>
+    publish('/app/game.playCard', JSON.stringify({ gameId, cardId }));
+
+  const buyCard = (marketCardId: string) =>
+    publish('/app/game.buyCard', JSON.stringify({ gameId, marketCardId }));
+
+  const attack = () => publish('/app/game.attack', JSON.stringify({ gameId }));
+
+  const endTurn = () =>
+    publish('/app/game.endTurn', JSON.stringify({ gameId }));
+
+  return {
+    gameState,
+    playCard,
+    buyCard,
+    attack,
+    endTurn,
+    connected,
+  };
 };

@@ -8,4 +8,6 @@ export const routes = {
   login: '/login',
   register: '/registration',
   test: '/test',
+  room: (id) => `/room/${id}`,
+  game: (id) => `/game/${id}`,
 } satisfies Record<string, Route>;

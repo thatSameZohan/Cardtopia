@@ -1,8 +1,8 @@
-export { GameRoom } from './ui/GameRoom';
-export { GameRoomHeader } from './ui/GameRoomHeader';
-export { GameRoomStatus } from './ui/GameRoomStatus';
+export { Room } from './ui/Room';
+export { RoomHeader } from './ui/RoomHeader';
+export { RoomStatus } from './ui/RoomStatus';
 export { GameView } from './ui/game/GameView';
 export { Card } from './ui/game/Card/Card';
 export { DiscardPile } from './ui/game/DiscardPile';
-export { GameTable } from './ui/game/GameTable';
-export { usePrivateGame } from './hook/usePrivateGame';
+export { Table } from './ui/game/Table';
+export { TableZone } from './ui/game/TableZone';

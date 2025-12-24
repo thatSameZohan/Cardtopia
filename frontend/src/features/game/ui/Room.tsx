@@ -8,9 +8,8 @@ import { useRooms } from '@/features/gameLobby/hook/useRooms';
 import { routes } from '@/shared/router/paths';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/redux/store';
-import { GameRoomHeader } from './GameRoomHeader';
-import { GameRoomStatus } from './GameRoomStatus';
-import { GameView } from './game/GameView';
+import { RoomHeader } from './RoomHeader';
+import { RoomStatus } from './RoomStatus';
 import { useWSContext } from '@/shared/ui/WSProvider/WSProvider';
 
 type Props = {
@@ -19,9 +18,9 @@ type Props = {
 
 const COOKIE_KEY = 'room_instance';
 
-export function GameRoom({ roomId }: Props) {
+export function Room({ roomId }: Props) {
   const router = useRouter();
-  const { leaveRoom, connected, rooms } = useRooms();
+  const { leaveRoom, connected, rooms } = useRooms(roomId);
   const { publish } = useWSContext();
   const username = useSelector((state: RootState) => state.auth.username);
 
@@ -65,31 +64,29 @@ export function GameRoom({ roomId }: Props) {
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
   }, [safeLeave]);
-  console.log(room?.creatorName === username, '22222');
   return (
     <div>
-      <GameRoomHeader
+      <RoomHeader
         roomId={roomId}
         connected={connected}
         username={username ?? ''}
       />
-      <GameRoomStatus
+      <RoomStatus
         connected={connected}
         waiting={waitingForSecondPlayer}
         isUserInRoom={isUserInRoom}
       />
-
       <div style={{ margin: '10px 0' }}>
         {room?.creatorName === username && (
           <button
-            onClick={() => publish('/app/game.create', JSON.stringify(room))}
+            onClick={() => {
+              publish('/app/game.start', JSON.stringify({ roomId }));
+            }}
           >
             Начать игру
           </button>
         )}
       </div>
-
-      {room && <GameView room={room} />}
 
       <button onClick={leaveAndExit}>Покинуть комнату</button>
     </div>

@@ -1,5 +1,5 @@
 import { type Metadata } from 'next';
-import {  Room } from '@/features/game';
+import { GameView } from '@/features/game';
 import { getMetadata } from 'shared/lib/metadata';
 import { routes } from 'shared/router/paths';
 
@@ -13,14 +13,14 @@ export async function generateMetadata({
   const { id } = await params;
 
   return getMetadata({
-    title: 'Игровая комната',
-    description: 'Игровая комната',
-    url: routes.room(id),
+    title: 'Игра',
+    description: 'Игра в комнате',
+    url: routes.game(id),
   });
 }
 
 export default async function RoomPage({ params }: AsyncParams) {
   const { id } = await params;
 
-  return <Room roomId={id} />;
+  return <GameView gameId={id} />;
 }
