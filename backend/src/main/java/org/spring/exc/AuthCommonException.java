@@ -8,7 +8,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter @Setter
-public class UserCommonException extends RuntimeException {
+public class AuthCommonException extends RuntimeException {
 
     private Integer code;
 

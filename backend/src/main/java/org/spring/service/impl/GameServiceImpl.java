@@ -6,6 +6,7 @@ import org.spring.dto.GameState;
 import org.spring.dto.PlayerState;
 import org.spring.dto.Room;
 import org.spring.enums.GameStatus;
+import org.spring.exc.GameCommonException;
 import org.spring.service.GameService;
 import org.springframework.stereotype.Service;
 
@@ -45,66 +46,37 @@ public class GameServiceImpl implements GameService {
 
     public void playCard (GameState gs, String playerId, String cardId) {
 
-        if (isFinished(gs)){
-            return;
-        }
+        PlayerState player = getPlayerOrThrow(gs, playerId);
 
-        PlayerState player = gs.getPlayers().get(playerId);
-
-        if (player == null) {
-            log.error("Такого игрока нет");
-           return;
-        }
-
-        Optional<Card> opt = player.getHand().stream()
+        Card card = player.getHand().stream()
                 .filter(c -> c.getId().equals(cardId))
-                .findFirst();
+                .findFirst()
+                .orElseThrow(() -> new GameCommonException ("CARD_NOT_IN_HAND", "Такой карты нет в руке"));
 
-        if (opt.isEmpty()) {
-           log.error("Такой карты нет в руке у игрока {}",playerId);
-           return;
-        }
-
-        Card card = opt.get();
         player.getHand().remove(card);
         player.getPlayedCards().add(card);
         player.setCurrentAttack(player.getCurrentAttack() + card.getAttack());
         player.setCurrentGold(player.getCurrentGold() + card.getGold());
-        log.info("Карта сыграла");
 
         // простой пример обработки возможностей
         if ("DRAW_1".equals(card.getAbility())) {
             drawCardsToHand(player, 1);
         }
 
-        log.info("Карты в руке для игрока {} {}. Текущее золото {}, текущая атака {}", player.getPlayerId(), player.getHand(), player.getCurrentGold(), player.getCurrentAttack());
+        log.info("Игрок {} сыграл карту {}, текущее золото {}, атака {}", playerId, card.getId(), player.getCurrentGold(), player.getCurrentAttack());
     }
 
     public void buyCard (GameState gs, String playerId, String marketCardId) {
 
-        if (isFinished(gs)){
-            return;
-        }
+        PlayerState player = getPlayerOrThrow(gs, playerId);
 
-        PlayerState player = gs.getPlayers().get(playerId);
-
-        if (player == null) {
-            log.error("Игрок не существует");
-            return;
-        }
-
-        Optional<Card> opt = gs.getMarket().stream().filter(c -> c.getId().equals(marketCardId)).findFirst();
-
-        if (opt.isEmpty()) {
-            log.error("Карты нет в магазине");
-            return;
-        }
-
-        Card card = opt.get();
+        Card card = gs.getMarket().stream()
+                .filter(c -> c.getId().equals(marketCardId))
+                .findFirst()
+                .orElseThrow(() -> new GameCommonException("CARD_NOT_IN_MARKET", "Карты нет в магазине"));
 
         if (player.getCurrentGold() < card.getCost()) {
-            log.error("Недостаточно золота у игрока");
-            return;
+            throw new GameCommonException("NOT_ENOUGH_GOLD", "Недостаточно золота");
         }
 
         player.setCurrentGold(player.getCurrentGold() - card.getCost());
@@ -116,35 +88,20 @@ public class GameServiceImpl implements GameService {
         gs.getMarket().remove(idx); // удаляем купленную карту из магазина
 
         if (!gs.getMarketDeck().isEmpty()) {
-            Card replacement = gs.getMarketDeck().removeFirst();
-            gs.getMarket().add(idx, replacement); // замена из магазина карт
+            gs.getMarket().add(idx, gs.getMarketDeck().removeFirst()); // замена из магазина карт
         }
-        log.info("Карта куплена");
-        log.info("Карты в руке для игрока {}, {}", player.getPlayerId(), player.getHand());
+        log.info("Игрок {} купил карту {}", playerId, card.getId());
     }
 
     public void attack(GameState gs, String playerId) {
 
-        if (isFinished(gs)){
-            return;
-        }
-
-        PlayerState player = gs.getPlayers().get(playerId);
-
-        if (player == null) {
-            log.error("Игрок не существует");
-            return;
-        }
+        PlayerState player = getPlayerOrThrow(gs, playerId);
 
         String opponentId = gs.getPlayers().keySet()
                 .stream()
                 .filter(id -> !id.equals(playerId))
                 .findFirst()
-                .orElse(null);
-
-        if (opponentId == null) {
-            log.error("Такой оппонент не существует");
-        }
+                .orElseThrow(() -> new GameCommonException("OPPONENT_NOT_FOUND", "Оппонент не найден"));
 
         PlayerState opponent = gs.getPlayers().get(opponentId);
 
@@ -155,25 +112,17 @@ public class GameServiceImpl implements GameService {
         if (opponent.getHealth() <= 0) {
             gs.setStatus(GameStatus.FINISHED);
             gs.setWinnerId(playerId);
-            // winner = playerId, в дальнейшем здесь можно сохранить результаты игры
-//            save(gs);
-//            games.remove(gs.getId());
+            // в дальнейшем здесь можно сохранить результаты игры
+            //save(gs);
+            //games.remove(gs.getId());
         }
-        log.info("Атака совершена, ваше здоровье {}, здоровье противника {}", player.getHealth(), opponent.getHealth());
+        log.info("Атака совершена, здоровье игрока {}: {}, оппонента {}: {}", playerId, player.getHealth(), opponentId, opponent.getHealth());
     }
 
     public void endTurn(GameState gs, String playerId) {
 
-        if (isFinished(gs)){
-            return;
-        }
+        PlayerState player = getPlayerOrThrow(gs, playerId);
 
-        PlayerState player = gs.getPlayers().get(playerId);
-
-        if (player == null) {
-            log.error("Игрок не существует");
-            return;
-        }
         // переместите руку и сыгранные карты, чтобы сбросить их.
         player.getDiscardPile().addAll(player.getHand());
         player.getDiscardPile().addAll(player.getPlayedCards());
@@ -182,30 +131,40 @@ public class GameServiceImpl implements GameService {
         player.setCurrentAttack(0);
 
         // передача хода
-        String next = gs.getPlayers()
-                .keySet()
-                .stream()
+        String next = gs.getPlayers().keySet().stream()
                 .filter(id -> !gs.isPlayersTurn(id))
-                .findFirst().orElse(null);
-
-        if (next == null) {
-            log.error("Игрок для следующего хода не найден");
-            return;
-        }
+                .findFirst()
+                .orElseThrow(() -> new GameCommonException("NEXT_PLAYER_NOT_FOUND", "Следующий игрок не найден"));
 
         gs.setActivePlayerId(next);
 
         // взять 5 карт в руки следующему игроку
-        PlayerState newActive = gs.getPlayers().get(next);
-        drawCardsToHand(newActive, 5);
-        log.info("Ход завершен для игрока {}", player.getPlayerId());
+        drawCardsToHand(gs.getPlayers().get(next), 5);
+        log.info("Ход завершен для игрока {}", playerId);
     }
 
     public Optional<GameState> findGame (String gameId) {
         return Optional.ofNullable(games.get(gameId));
     }
 
-    /* ========================= UTIL methods ========================= */
+    /* ========================= UTIL ========================= */
+
+    /**
+     * Проверяем есть ли игрок и статус игры
+     * @param gs игрок {@link GameState}
+     * @param playerId имя игрока
+     * @return {@link PlayerState}
+     */
+    private PlayerState getPlayerOrThrow(GameState gs, String playerId) {
+        PlayerState player = gs.getPlayers().get(playerId);
+        if (player == null) {
+            throw new GameCommonException("PLAYER_NOT_FOUND", "Игрок не найден");
+        }
+        if (gs.getStatus() == GameStatus.FINISHED) {
+            throw new GameCommonException("GAME_FINISHED", "Игра окончена");
+        }
+        return player;
+    }
 
     /**
      * Инициализация игры:
@@ -271,14 +230,6 @@ public class GameServiceImpl implements GameService {
             if (p.getDeck().isEmpty()) break; // no cards available
             p.getHand().add(p.getDeck().removeFirst());
         }
-        log.info("Карты в руке для игрока {} {}", p.getPlayerId(), p.getHand());
-    }
-
-    private boolean isFinished(GameState gs) {
-        if (gs.getStatus().equals(GameStatus.FINISHED)) {
-            log.error("Игра окончена");
-            return true;
-        }
-        return false;
+        log.info("Игрок {} взял {} карт", p.getPlayerId(),n);
     }
 }

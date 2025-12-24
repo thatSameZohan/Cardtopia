@@ -3,11 +3,11 @@ package org.spring.exc;
 import lombok.Getter;
 
 @Getter
-public class RoomCommonException extends RuntimeException {
+public class GameCommonException extends RuntimeException {
 
     private final String code;
 
-    public RoomCommonException(String code, String message) {
+    public GameCommonException(String code, String message) {
         super(message);
         this.code = code;
     }

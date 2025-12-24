@@ -2,15 +2,18 @@ package org.spring.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.spring.dto.ErrorResponse;
 import org.spring.dto.RoomRequest;
 import org.spring.dto.Room;
+import org.spring.exc.RoomCommonException;
 import org.spring.service.RoomService;
+import org.springframework.messaging.handler.annotation.MessageExceptionHandler;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.stereotype.Controller;
 import java.security.Principal;
-import java.util.Collection;
 
 @Controller
 @RequiredArgsConstructor
@@ -20,65 +23,36 @@ public class RoomControllerWS {
     private final RoomService roomService;
     private final SimpMessagingTemplate template;
 
-    /* ========================= API ========================= */
+    /* ========================= WebSocket API ========================= */
 
     /**
      * Создание новой игровой комнаты.
      * Запрос на маршрут: /app/room.create
      * Ответ отправляется на маршрут "/user/queue/room.created"
-     * {
-     * "id" : "1ead51a1",
-     * "name" "Комната +username"
-     * "players" : [ "user" ]
-     * "isFull" : false
-     * "creatorName": user
-     * }
-     *
      * @param principal авторизованный пользователь
      */
     @MessageMapping("/room.create")
     public void createRoom (Principal principal) {
 
-        log.info("/app/room.create зашел");
-
-        if (!requireAuth(principal)) {
-            log.error("Пользователь не авторизован");
-            return;
-        }
-
-        try {
-            Room room = roomService.createRoom(principal.getName());
-            template.convertAndSendToUser(principal.getName(), "/queue/room.created", room);
-            broadcastUpdatedRooms();
-        } catch (Exception e) {
-            sendError(principal, e.getMessage());
-        }
-
+        requireAuth(principal);
+        Room room = roomService.createRoom(principal.getName());
+        template.convertAndSendToUser(principal.getName(), "/queue/room.created", room);
+        broadcastUpdatedRooms();
         log.info("/app/room.create отработал");
     }
 
     /**
      * Присоединение текущего игрока к комнате.
+     * Запрос на маршрут: /app/room.join
      * @param  req {@link RoomRequest} {gameId (String)}
      * @param principal авторизованный пользователь
      */
     @MessageMapping("/room.join")
     public void joinRoom(@Payload RoomRequest req, Principal principal) {
 
-        log.info("/app/room.join зашел");
-
-        if (!requireAuth(principal)) {
-            log.error("Пользователь не авторизован");
-            return;
-        }
-
-        try {
-            roomService.joinRoom(req.roomId(), principal.getName());
-            broadcastUpdatedRooms();
-        } catch (Exception e) {
-            sendError(principal, e.getMessage());
-        }
-
+        requireAuth(principal);
+        roomService.joinRoom(req.roomId(), principal.getName());
+        broadcastUpdatedRooms();
         log.info("/app/room.join отработал");
     }
 
@@ -89,20 +63,10 @@ public class RoomControllerWS {
      */
     @MessageMapping("/room.leave")
     public void leaveRoom(@Payload RoomRequest req, Principal principal) {
-        log.info("/app/room.leave зашел");
 
-        if (!requireAuth(principal)) {
-            log.error("Пользователь не авторизован");
-            return;
-        }
-
-        try {
-            roomService.leaveRoom(req.roomId(), principal.getName());
-            broadcastUpdatedRooms();
-        } catch (Exception e) {
-            sendError(principal, e.getMessage());
-        }
-
+        requireAuth(principal);
+        roomService.leaveRoom(req.roomId(), principal.getName());
+        broadcastUpdatedRooms();
         log.info("/app/room.leave отработал");
     }
 
@@ -114,37 +78,19 @@ public class RoomControllerWS {
     @MessageMapping("/room.delete")
     public void deleteRoom(@Payload RoomRequest req, Principal principal) {
 
-        log.info("/app/room.delete зашел");
-
-        if (!requireAuth(principal)) {
-            log.error("Пользователь не авторизован");
-            return;
-        }
-
-        try {
-            roomService.deleteRoom(req.roomId(), principal.getName());
-            broadcastUpdatedRooms();
-        } catch (Exception e) {
-            sendError(principal, e.getMessage());
-        }
-
+        requireAuth(principal);
+        roomService.deleteRoom(req.roomId(), principal.getName());
+        broadcastUpdatedRooms();
         log.info("/app/room.delete отработал");
     }
 
     /**
+     * Получить список комнат
      * Запрос на маршрут: /app/room.list
      * Ответ отправляется на маршрут "/topic/rooms"
-     * [{
-     * "id" : "1ead51a1",
-     * "name" "Комната +username"
-     * "players" : [ "user" ]
-     * "isFull" : false
-     * "creatorName": user
-     * }]
      */
     @MessageMapping("/room.list")
     public void listRooms() {
-        log.info("/app/room.list зашел");
         broadcastUpdatedRooms();
         log.info("/app/room.list отработал");
     }
@@ -154,32 +100,40 @@ public class RoomControllerWS {
     /**
      * Обновить текущие комнаты
      * Ответ в виде JSON отправляется на маршрут "/topic/rooms"
-     * [{
-     * "id" : "1ead51a1",
-     * "name" "Комната +username"
-     * "players" : [ "user" ]
-     * "isFull" : false
-     * "creatorName": user
-     * }]
      */
     private void broadcastUpdatedRooms() {
         template.convertAndSend("/topic/rooms", roomService.listRooms());
     }
 
     /**
-     * Отправка ошибки пользователю в виде СТРОКИ на маршрут "/user/queue/errors"
+     * Проверка авторизации
      */
-    private void sendError(Principal principal, String message) {
-        if (principal != null) {
-            template.convertAndSendToUser(principal.getName(), "/queue/errors", message);
+    private void requireAuth(Principal principal) {
+        if (principal == null) {
+            throw new RoomCommonException("UNAUTHORIZED", "Пользователь не авторизован");
         }
     }
 
-    /**
-     * Проверка авторизации
-     */
-    private boolean requireAuth(Principal principal) {
-        return principal != null;
+    /* ========================= Exception Handling ========================= */
 
+    /**
+     * Централизованная обработка RoomCommonException
+     * Ошибки отправляются пользователю на /user/queue/errors
+     */
+    @MessageExceptionHandler(RoomCommonException.class)
+    @SendToUser("/queue/errors")
+    public ErrorResponse handleRoomException (RoomCommonException exс) {
+        log.error("Ошибка комнаты: {}", exс.getMessage());
+        return new ErrorResponse(exс.getCode(), exс.getMessage());
+    }
+
+    /**
+     * Обработка любых необработанных ошибок (например, NullPointerException)
+     */
+    @MessageExceptionHandler(Exception.class)
+    @SendToUser("/queue/errors")
+    public ErrorResponse handleGenericException(Exception exс) {
+        log.error("Необработанная ошибка: ", exс);
+        return new ErrorResponse("INTERNAL_ERROR", "Произошла внутренняя ошибка сервера");
     }
 }

@@ -34,8 +34,7 @@ public class RoomServiceImpl implements RoomService {
     public Room createRoom(String creatorName) {
 
         if (isUserInAnyRoom(creatorName)) {
-            log.error("Пользователь уже находится в комнате");
-            throw new RoomCommonException("Пользователь уже находится в комнате");
+            throw new RoomCommonException("USER_ALREADY_IN_ROOM", "Пользователь уже находится в комнате");
         }
 
         String roomId = generateRoomId();
@@ -54,38 +53,34 @@ public class RoomServiceImpl implements RoomService {
         Room room = getRoomOrThrow(roomId);
 
         if (room.getPlayers().size() >= 2) {
-            throw new RoomCommonException ("Комната заполнена");
+            throw new RoomCommonException ("ROOM_FULL", "Комната заполнена");
         }
 
         if (room.getPlayers().contains(username)) {
-            throw new RoomCommonException ("Вы уже в этой комнате");
+            throw new RoomCommonException ("USER_ALREADY_IN_ROOM", "Вы уже в этой комнате");
         }
 
         if (isUserInAnyRoom(username)) {
-            throw new RoomCommonException ("Вы уже в другой комнате");
+            throw new RoomCommonException ("USER_ALREADY_IN_OTHER_ROOM", "Вы уже в другой комнате");
         }
 
         room.getPlayers().add(username);
         updateRoomState(room);
-        log.info("Пользователь {} вошел в комнату {}", username, roomId);
+        log.info("Пользователь {} присоединился к комнате {}", username, roomId);
         return room;
     }
 
     @Override
     public GameState startGame(String roomId, String username) {
 
-        Room room = rooms.get(roomId);
-
-        if (room == null) {
-            throw new RoomCommonException ("Комната не найдена");
-        }
+        Room room = getRoomOrThrow(roomId);
 
         if (!room.getCreatorName().equals(username)) {
-            throw new RoomCommonException ("Начать игру может только создатель");
+            throw new RoomCommonException ("NOT_ROOM_CREATOR", "Начать игру может только создатель");
         }
 
         if (room.getPlayers().size() < 2) {
-            throw new RoomCommonException ("Недостаточно игроков");
+            throw new RoomCommonException ("NOT_ENOUGH_PLAYERS", "Недостаточно игроков для старта игры");
         }
 
         return gameService.createGame(room, username);
@@ -97,7 +92,7 @@ public class RoomServiceImpl implements RoomService {
         Room room = getRoomOrThrow(roomId);
 
         if (!room.getPlayers().remove(username)) {
-            throw new RoomCommonException ("Вы не в этой комнате");
+            throw new RoomCommonException ("USER_NOT_IN_ROOM", "Вы не находитесь в этой комнате");
         }
 
         if (room.getPlayers().isEmpty()) {
@@ -114,7 +109,7 @@ public class RoomServiceImpl implements RoomService {
         Room room = getRoomOrThrow(roomId);
 
         if (!room.getCreatorName().equals(username)) {
-            throw new RoomCommonException ("Вы не можете удалить эту комнату");
+            throw new RoomCommonException ("NOT_ROOM_CREATOR", "Вы не можете удалить эту комнату");
         }
 
         rooms.remove(roomId);
@@ -153,7 +148,7 @@ public class RoomServiceImpl implements RoomService {
     private Room getRoomOrThrow(String roomId) {
         Room room = rooms.get(roomId);
         if (room == null) {
-            throw new RoomCommonException("Комнаты не существует");
+            throw new RoomCommonException("ROOM_NOT_FOUND", "Комната с ID " + roomId + " не существует");
         }
         return room;
     }

@@ -19,7 +19,6 @@ public class Card {
     private final int cost;
     private final String ability; // e.g., "DRAW_1", null - placeholder
 
-
     public static Card goldCard() {
         return new Card(UUID.randomUUID().toString(), 0, 1, 1, null);
     }
