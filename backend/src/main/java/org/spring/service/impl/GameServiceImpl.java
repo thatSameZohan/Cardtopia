@@ -123,8 +123,10 @@ public class GameServiceImpl implements GameService {
 
         PlayerState player = getPlayerOrThrow(gs, playerId);
 
-        // переместите руку и сыгранные карты, чтобы сбросить их.
-        player.getDiscardPile().addAll(player.getHand());
+        if (!player.getHand().isEmpty()) {
+            throw new GameCommonException("HAND_NOT_EMPTY", "Рука не пустая");
+        }
+        // переместите руку и сыгранные карты, чтобы сбросить их
         player.getDiscardPile().addAll(player.getPlayedCards());
         player.getHand().clear();
         player.getPlayedCards().clear();
@@ -139,7 +141,12 @@ public class GameServiceImpl implements GameService {
         gs.setActivePlayerId(next);
 
         // взять 5 карт в руки следующему игроку
-        drawCardsToHand(gs.getPlayers().get(next), 5);
+        PlayerState playerNext = gs.getPlayers().get(next);
+
+        if (playerNext.getHand().isEmpty()) {
+            drawCardsToHand(playerNext, 5);
+        }
+
         log.info("Ход завершен для игрока {}", playerId);
     }
 
@@ -206,8 +213,10 @@ public class GameServiceImpl implements GameService {
         // рандомное определение игрока для хода
         List<String> ids = new ArrayList<>(gs.getPlayers().keySet());
         gs.setActivePlayerId(ids.get(new Random().nextInt(ids.size())));
-        drawCardsToHand (gs.getActivePlayer(), 5);
-        log.info("Рандомно определен игрок для хода {}, который взял в руки 5 карт из колоды", gs.getActivePlayerId());
+        for (PlayerState p: gs.getPlayers().values()) {
+            drawCardsToHand(p,5);
+        }
+        log.info("Рандомно определен игрок для хода {}, все игроки взяли в руки 5 карт из своих колод", gs.getActivePlayerId());
         log.info("Инициализация игры завершена");
     }
 
