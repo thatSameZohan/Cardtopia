@@ -1,6 +1,6 @@
 type Props = { roomId: string; connected: boolean; username?: string };
 
-export const GameRoomHeader = ({ roomId, connected, username }: Props) => (
+export const RoomHeader = ({ roomId, connected, username }: Props) => (
   <div>
     <h1>
       Room: {roomId}{' '}

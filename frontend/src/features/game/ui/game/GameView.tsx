@@ -1,45 +1,41 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useGame } from '../../hook/useGame';
-import { GameTable } from './GameTable';
-import { usePrivateGame } from '../..';
-import { Room } from '@/features/gameLobby/type/type';
+import styles from './Game.module.scss';
+import { Table } from './Table';
+import { RootState, useAppSelector } from '@/redux/store';
+import { DndProvider } from 'react-dnd';
+import { HTML5Backend } from 'react-dnd-html5-backend';
+type Props = { gameId: string };
 
-type PropsRoom = {
-  room: Room;
-};
+export const GameView = ({ gameId }: Props) => {
+  const { gameState, playCard, buyCard, attack, endTurn } = useGame(gameId);
+  const username = useAppSelector((state: RootState) => state.auth.username);
 
-export const GameView = ({ room }: PropsRoom) => {
-  const { messages } = useGame(room);
-  console.log(messages);
-  // const playerPrivate = usePrivateGame();
+  useEffect(() => {
+    if (!gameId) {
+      console.warn('[GameView] no gameId');
+    }
+  }, [gameId]);
 
-  //   if (!state) return <p>Загрузка игры…</p>;
-
-  //   const handlePlayCard = (cardId: string, target?: string) => {
-  //     sendAction({
-  //       type: 'PLAY_CARD',
-  //       payload: { cardId, target },
-  //     });
-  //   };
-
-  //   const handleEndTurn = () => {
-  //     sendAction({ type: 'END_TURN' });
-  //   };
+  if (!gameState) {
+    return <div>Waiting for game state…</div>;
+  }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <h2>Игра: {room.id}</h2>
-      {/* <p>Ваш ход: {isMyTurn ? 'Да' : 'Нет'}</p>
-
-      <GameTable
-        state={state}
-        username={username}
-        onPlayCard={handlePlayCard}
-      />
-
-      {isMyTurn && <button onClick={handleEndTurn}>Завершить ход</button>} */}
+    <div className={styles.game}>
+      <h3 className={styles['game__title']}>Game: {gameId}</h3>
+      <DndProvider backend={HTML5Backend}>
+        <Table
+          stateGame={gameState}
+          username={username}
+          onPlayCard={playCard}
+          onBuyCard={buyCard}
+          onEndTurn={endTurn}
+          onAttack={attack}
+        />
+      </DndProvider>
     </div>
   );
 };

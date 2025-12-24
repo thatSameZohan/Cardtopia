@@ -1,0 +1,49 @@
+@use 'variables' as *;
+.game {
+  width: 100%;
+  height: 100%;
+  background: $bg-glow-gradient;
+  backdrop-filter: blur(12px);
+  border: 1px solid red;
+  padding: 20px;
+  &__title {
+    color: antiquewhite;
+    text-align: center; // горизонтально
+    margin: 0;
+  }
+}
+.opponent {
+  border: 1px solid wheat;
+  &__title {
+    color: antiquewhite;
+  }
+  &__card-container {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+  }
+}
+.me {
+  border: 1px solid wheat;
+  &__title {
+    color: antiquewhite;
+  }
+  &__card-container {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+  }
+}
+.zone {
+  justify-content: center;
+  min-height: 150px;
+  width: 80%;
+  margin: $spacing-md;
+  padding: $spacing-md;
+  border: 2px dashed #666;
+  border-radius: $radius-md;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  transition: background 0.15s;
+}
