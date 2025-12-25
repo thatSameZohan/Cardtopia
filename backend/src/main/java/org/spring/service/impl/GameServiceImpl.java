@@ -131,6 +131,7 @@ public class GameServiceImpl implements GameService {
         player.getHand().clear();
         player.getPlayedCards().clear();
         player.setCurrentAttack(0);
+        player.setCurrentGold(0);
 
         // передача хода
         String next = gs.getPlayers().keySet().stream()

@@ -51,7 +51,7 @@ public class AuthServiceImpl implements AuthService {
         );
 
         String accessToken = jwtService.generateAccessToken(username, Map.of("roles", person.getRoles()));
-
+        refreshTokenService.deleteByPerson(person);
         RefreshToken rt = refreshTokenService.createRefreshToken(person);
         CookieUtil.addRefreshTokenCookie(response, rt.getToken());
 
@@ -72,8 +72,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         PersonEntity person = oldRt.getPerson();
-
-        refreshTokenService.revokeToken(oldRt);
+        refreshTokenService.deleteByPerson(person);
         RefreshToken newRt = refreshTokenService.createRefreshToken(person);
         CookieUtil.addRefreshTokenCookie(response, newRt.getToken());
 
@@ -94,7 +93,7 @@ public class AuthServiceImpl implements AuthService {
             throw new AuthCommonException(440, "Refresh token отозван или истек");
         }
 
-        refreshTokenService.revokeToken(rt);
+        refreshTokenService.deleteByPerson(rt.getPerson());
         CookieUtil.clearRefreshToken(response);
     }
 }
