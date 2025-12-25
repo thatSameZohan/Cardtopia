@@ -16,9 +16,10 @@ public class GameState {
     private final Map<String, PlayerState> players = new LinkedHashMap<>();
     private GameStatus status;
     private String activePlayerId;
-    private final Deque<Card> marketDeck = new ArrayDeque<>();
-    private final List<Card> market = new ArrayList<>(5);
+    private final Deque<CardDto> marketDeck = new ArrayDeque<>();
+    private final List<CardDto> market = new ArrayList<>(5);
     private String winnerId;
+    private Deque<CardDto> explorerPile = new ArrayDeque<>();
 
     public GameState(String id) {
         this.id = id;
@@ -27,10 +28,6 @@ public class GameState {
 
     public boolean isPlayersTurn(String playerId) {
         return playerId.equals(activePlayerId);
-    }
-
-    public PlayerState getActivePlayer () {
-        return players.get(activePlayerId);
     }
 }
 
