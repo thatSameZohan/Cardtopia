@@ -2,12 +2,13 @@
 import React, { useState, useRef } from 'react';
 import { Card } from './Card/Card';
 import { Market } from './Market';
-import { GameState } from '../../type/type';
+import { GameState, Player } from '../../type/type';
 import styles from './Game.module.scss';
 import clsx from 'clsx';
 import { TableZone } from '../..';
 
 type Props = {
+  player: Player | null;
   stateGame: GameState;
   username: string | null;
   onPlayCard: (cardId: string) => void;
@@ -17,6 +18,7 @@ type Props = {
 };
 
 export const Table = ({
+  player,
   stateGame,
   username,
   onPlayCard,
@@ -74,8 +76,8 @@ export const Table = ({
         </h3>
         <h1 className={styles['opponent__title']}>❤ {opponent?.health}</h1>
         <div className={styles['opponent__card-container']}>
-          {opponent?.hand.map((card) => (
-            <Card type="card" key={card.id} id={card.id} variant="back" />
+          {Array.from({ length: opponent?.handSize ?? 0 }).map((_, index) => (
+            <Card key={index} id={`opponent-card-${index}`} variant="back" />
           ))}
         </div>
       </div>
@@ -94,22 +96,22 @@ export const Table = ({
         title="Стол"
         accept="card"
         onDrop={(card) =>
-          handlePlayCard(card.id, card.cost ?? 0, card.attack ?? 0)
+          handlePlayCard(card.id, card.gold ?? 0, card.attack ?? 0)
         }
         onClear={tableRef}
       />
-      <TableZone
+      {/* <TableZone
         title="Рынок"
         accept="market"
         onDrop={(card) => handleBuyCard(card.id, card.cost ?? 0)}
-      />
+      /> */}
       {/* Ваши карты */}
       <div className={clsx(stateGame.activePlayerId === username && styles.me)}>
         <h3 className={styles['me__title']}>Ваши карты</h3>
         <h3 className={styles['me__title']}>{me?.playerId}</h3>
         <h1 className={styles['me__title']}>❤ {me?.health}</h1>
         <div className={styles['me__card-container']}>
-          {me?.hand.map((card) => (
+          {player?.hand.map((card) => (
             <Card
               type="card"
               key={card.id}

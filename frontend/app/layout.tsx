@@ -8,6 +8,7 @@ import { type ReactNode } from 'react';
 import { ToastContainer } from 'react-toastify';
 import { store } from '@/redux/store';
 import { AuthInitializer } from '@/features/auth/ui/AuthInitializer/AuthInitializer';
+import SnowFall from 'react-snowfall';
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
@@ -27,6 +28,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body>
         <Provider store={store}>
           <AuthInitializer>{children}</AuthInitializer>
+          <SnowFall color="#82C3D9" />
           <ToastContainer />
         </Provider>
       </body>

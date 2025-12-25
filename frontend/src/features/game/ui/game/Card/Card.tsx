@@ -45,7 +45,9 @@ export const Card = ({
       {variant === 'face' && (
         <>
           {cost !== undefined && <div className={styles.cost}>💰 {cost}</div>}
-          {gold !== undefined && <div className={styles.gold}>🪙 {gold}</div>}
+          {gold !== undefined && (
+            <div className={styles.gold}>🪙 {gold}!!!</div>
+          )}
           {attack !== undefined && (
             <div className={styles.attack}>⚔ {attack}</div>
           )}

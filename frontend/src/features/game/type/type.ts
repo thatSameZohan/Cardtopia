@@ -1,34 +1,46 @@
-export type GameMessage = {
+export type GameMessage<T = unknown> = {
   type: string;
-  payload: any;
-};
-
-export type CardType = {
-  id: string;
-  attack?: number;
-  cost?: number;
-  gold?: number;
-  type: 'card' | 'market';
+  payload: T;
 };
 
 export type Player = {
+  hand: CardType[];
+  playedCards: CardType[];
+};
+
+export type PlayersMap = Record<string, PlayerState>;
+
+export type GameStatus = 'WAITING_FOR_PLAYER' | 'IN_PROGRESS' | 'FINISHED';
+export interface GameState {
+  gameId: string;
+  activePlayerId: string;
+  status: GameStatus;
+  winnerId: string | null;
+  market: CardType[];
+  players: PlayersMap;
+}
+
+export interface PlayerState {
   playerId: string;
+  active: boolean;
   health: number;
   currentAttack: number;
   currentGold: number;
-  hand: CardType[];
-};
+  deckSize: number;
+  discardSize: number;
+  handSize: number;
+}
+type CardAbility = null; // временно
 
-export type PlayersMap = Record<string, Player>;
-
-export type GameState = {
+export interface CardType {
   id: string;
-  status: 'IN_PROGRESS' | 'FINISHED' | 'WAITING';
-  activePlayerId: string;
-  players: PlayersMap;
-  market: CardType[];
-  marketDeck: CardType[];
-};
+  attack?: number;
+  gold?: number;
+  cost?: number;
+  type?: 'card' | 'market';
+  ability?: CardAbility | null;
+}
+
 export type MarketProps = {
   cards: CardType[];
   onBuy: (cardId: string, cardCost: number) => void;

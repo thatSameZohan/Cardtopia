@@ -27,9 +27,8 @@ export const useRooms = (roomId?: string) => {
 
     // Ошибки
     errorSub.current = subscribe(`/user/queue/errors`, (msg: IMessage) => {
-      const text =
-        typeof msg.body === 'string' ? msg.body : JSON.stringify(msg.body);
-      toast.error(text);
+      const { message } = JSON.parse(msg.body);
+      toast.error(message);
     });
 
     // Новые комнаты
