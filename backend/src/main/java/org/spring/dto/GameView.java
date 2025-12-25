@@ -4,11 +4,11 @@ import org.spring.enums.GameStatus;
 
 import java.util.List;
 
-public record GameView(
+public record GameView (
         String gameId,
         String activePlayerId,
         GameStatus status,
         List<PlayerView> players,
-        List<Card> market,
+        List<CardDto> market,
         String winnerId
 ) {}
