@@ -4,7 +4,8 @@ import clsx from 'clsx';
 import styles from './Card.module.scss';
 import { useDrag } from 'react-dnd';
 import { CardType } from '@/features/game/type/type';
-
+import KnifeIcon from '../../../../../../public/assets/icons/knife.svg';
+import CoinIcon from '../../../../../../public/assets/icons/coin.svg';
 type CardProps = CardType & {
   disabled?: boolean;
   variant?: 'face' | 'back';
@@ -43,15 +44,24 @@ export const Card = ({
       )}
     >
       {variant === 'face' && (
-        <>
-          {cost !== undefined && <div className={styles.cost}>💰 {cost}</div>}
-          {gold !== undefined && (
-            <div className={styles.gold}>🪙 {gold}!!!</div>
-          )}
-          {attack !== undefined && (
-            <div className={styles.attack}>⚔ {attack}</div>
-          )}
-        </>
+        <div className={styles.container}>
+          {cost !== undefined && <div className={styles.cost}>{cost}</div>}
+          <div className={styles.content}>
+            {gold !== undefined && (
+              <div className={styles.gold}>
+                <CoinIcon />
+                {gold}
+              </div>
+            )}
+            {attack !== undefined && (
+              <div className={styles.attack}>
+                <KnifeIcon />
+                {attack}
+              </div>
+            )}
+          </div>
+          <div>Ability: Soon...</div>
+        </div>
       )}
     </div>
   );

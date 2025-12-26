@@ -3,7 +3,7 @@
   width: 120px;
   height: 170px;
   border-radius: 16px;
-  padding: 8px;
+  padding: 0 12px 8px 8px;
   box-sizing: border-box;
 
   user-select: none;
@@ -86,7 +86,6 @@
 .gold {
   width: 30px;
   height: 30px;
-  border-radius: 50%;
 
   display: flex;
   align-items: center;
@@ -106,15 +105,16 @@
 .cost {
   align-self: flex-end;
   background: radial-gradient(circle at top, #ffdb7d, #a46a00);
+  float: inline-end;
+  border-radius: 0 0 20px 20px;
+  height: 45px;
 }
 
 .gold {
-  align-self: flex-start;
   background: radial-gradient(circle at top, #ffd966, #9c6b00);
 }
 
 .attack {
-  align-self: center;
   background: radial-gradient(circle at top, #ff6b6b, #7a0000);
 }
 .art {
@@ -148,4 +148,17 @@
   text-shadow:
     0 0 10px rgba(180, 140, 255, 0.6),
     0 2px 6px rgba(0, 0, 0, 0.8);
+}
+.container {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  flex-direction: column;
+}
+.content {
+  display: flex;
+  gap: 10px;
+  height: 100%;
+  justify-content: center;
+  align-items: center;
 }
