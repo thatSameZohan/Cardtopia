@@ -13,12 +13,27 @@
         .card { border: 1px solid #aaa; padding: 6px; margin: 4px }
         .played { background: #f0f0f0 }
         .winner { color: green; font-weight: bold }
+
+        .ability {
+            font-size: 12px;
+            color: #444;
+            margin-left: 8px;
+        }
+
+        .error {
+            background: #ffe6e6;
+            color: #900;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #d00;
+        }
     </style>
 </head>
 <body>
 
 <h3>Game</h3>
 
+<div id="errors"></div>
 <div id="status"></div>
 
 <button onclick="attack()">Attack</button>
@@ -49,23 +64,21 @@
 
         onConnect: () => {
 
-            // 🔹 общее состояние
             client.subscribe("/topic/game." + gameId, msg => {
                 gameView = JSON.parse(msg.body);
                 render();
             });
 
-            // 🔹 приватное состояние
             client.subscribe("/user/queue/game." + gameId, msg => {
                 privateView = JSON.parse(msg.body);
                 render();
             });
 
             client.subscribe("/user/queue/errors", msg => {
-                console.log("ERROR:", msg.body);
+                const err = JSON.parse(msg.body);
+                showError(err.code + ": " + err.message);
             });
 
-            // первичная инициализация
             client.publish({
                 destination: "/app/game.init",
                 body: JSON.stringify({ gameId })
@@ -74,6 +87,12 @@
     });
 
     client.activate();
+
+    function showError(text) {
+        const div = document.getElementById("errors");
+        div.innerHTML = `<div class="error">${text}</div>`;
+        setTimeout(() => div.innerHTML = "", 4000);
+    }
 
     function render() {
         if (!gameView) return;
@@ -89,8 +108,7 @@
     }
 
     function renderStatus() {
-        const div = document.getElementById("status");
-        div.innerHTML = `
+        document.getElementById("status").innerHTML = `
             Status: ${gameView.status}
             ${gameView.winnerId ? `<div class="winner">Winner: ${gameView.winnerId}</div>` : ""}
         `;
@@ -109,6 +127,14 @@
         });
     }
 
+    function renderAbilities(card) {
+        if (!card.abilities || card.abilities.length === 0) return "";
+
+        return card.abilities.map(a =>
+            `<div class="ability">• ${a.type} ${a.value} (${a.condition || "always"})</div>`
+        ).join("");
+    }
+
     function renderHand() {
         const div = document.getElementById("hand");
         div.innerHTML = "";
@@ -117,7 +143,8 @@
             const d = document.createElement("div");
             d.className = "card";
             d.innerHTML = `
-                ${c.name} (ATK:${c.attack}, GOLD:${c.gold})
+                <strong>${c.name}</strong> (Cost:${c.cost})
+                ${renderAbilities(c)}
                 <button onclick="play('${c.id}')">Play</button>
             `;
             div.appendChild(d);
@@ -131,7 +158,10 @@
         privateView.playedCards.forEach(c => {
             const d = document.createElement("div");
             d.className = "card played";
-            d.textContent = `${c.name} (ATK:${c.attack}, GOLD:${c.gold})`;
+            d.innerHTML = `
+                <strong>${c.name}</strong>
+                ${renderAbilities(c)}
+            `;
             div.appendChild(d);
         });
     }
@@ -144,7 +174,8 @@
             const d = document.createElement("div");
             d.className = "card";
             d.innerHTML = `
-                ${c.name} COST:${c.cost}
+                <strong>${c.name}</strong> (Cost:${c.cost})
+                ${renderAbilities(c)}
                 <button onclick="buy('${c.id}')">Buy</button>
             `;
             div.appendChild(d);
