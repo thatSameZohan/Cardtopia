@@ -68,11 +68,8 @@
   }
 }
 .face {
-  background: radial-gradient(
-      circle at top,
-      rgba(255, 255, 255, 0.35),
-      transparent 60%
-    ),
+  background:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.35), transparent 60%),
     linear-gradient(160deg, #fff3c8, #e6c97a);
 
   border: 2px solid #7a5a2e;
@@ -161,4 +158,8 @@
   height: 100%;
   justify-content: center;
   align-items: center;
+}
+.highlighted {
+  border: 2px solid gold;
+  box-shadow: 0 0 10px gold;
 }

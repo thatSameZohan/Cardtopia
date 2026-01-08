@@ -83,6 +83,7 @@ export const Table = ({
       </div>
       {/* Рынок */}
       <Market
+        gold={gold}
         cards={stateGame.market}
         onBuy={(cardId, cardCost) => handleBuyCard(cardId, cardCost)}
       />

@@ -1,4 +1,4 @@
-@use 'variables' as *;
+@use '@/app/styles/variables' as *;
 .game {
   width: 100%;
   height: 100%;
@@ -46,4 +46,29 @@
   flex-wrap: wrap;
   align-items: flex-start;
   transition: background 0.15s;
+}
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #1e1e1e;
+  color: white;
+  padding: 32px;
+  border-radius: 16px;
+  min-width: 320px;
+  text-align: center;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 24px;
 }

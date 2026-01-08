@@ -43,5 +43,6 @@ export interface CardType {
 
 export type MarketProps = {
   cards: CardType[];
+  gold: number;
   onBuy: (cardId: string, cardCost: number) => void;
 };

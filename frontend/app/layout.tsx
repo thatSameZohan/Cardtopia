@@ -1,16 +1,21 @@
 'use client';
 import 'react-toastify/dist/ReactToastify.css';
 import '@/app/styles/global.scss';
-import '@/app/styles/variables.scss';
 import '@/app/styles/normalize.css';
 import { Provider } from 'react-redux';
-import { type ReactNode } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import { ToastContainer } from 'react-toastify';
 import { store } from '@/redux/store';
 import { AuthInitializer } from '@/features/auth/ui/AuthInitializer/AuthInitializer';
 import SnowFall from 'react-snowfall';
 
 export default function RootLayout({ children }: { children: ReactNode }) {
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   return (
     <html lang="en">
       <head>
@@ -28,7 +33,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body>
         <Provider store={store}>
           <AuthInitializer>{children}</AuthInitializer>
-          <SnowFall color="#82C3D9" />
+          {isClient && <SnowFall color="#82C3D9" />}
           <ToastContainer />
         </Provider>
       </body>
