@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class WebSocketAuthInterceptor implements ChannelInterceptor {
 
-    private final JwtService jwtService; // твой сервис для проверки JWT
+    private final JwtService jwtService;
 
     public WebSocketAuthInterceptor(JwtService jwtService) {
         this.jwtService = jwtService;
@@ -24,6 +24,7 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
         StompHeaderAccessor accessor =
                 MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
 
+        assert accessor != null;
         if (StompCommand.CONNECT.equals(accessor.getCommand())) {
             String token = accessor.getFirstNativeHeader("Authorization");
             if (token != null && token.startsWith("Bearer ")) {

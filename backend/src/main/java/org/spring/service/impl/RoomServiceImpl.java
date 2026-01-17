@@ -122,11 +122,6 @@ public class RoomServiceImpl implements RoomService {
     }
 
     @Override
-    public Optional<Room> findRoom(String roomId) {
-        return Optional.ofNullable(rooms.get(roomId));
-    }
-
-    @Override
     public boolean isUserInAnyRoom(String username) {
         return rooms.values()
                 .stream()

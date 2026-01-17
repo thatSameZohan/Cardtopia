@@ -2,16 +2,11 @@ package org.spring.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.spring.dto.CardDto;
-import org.spring.dto.GameState;
-import org.spring.dto.PlayerState;
-import org.spring.dto.Room;
+import org.spring.dto.*;
 import org.spring.enums.GameStatus;
 import org.spring.exc.GameCommonException;
-import org.spring.mapper.CardMapper;
-import org.spring.model.CardEntity;
-import org.spring.repository.CardRepository;
 import org.spring.service.GameService;
+import org.spring.util.CardDefinitionUtil;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -33,9 +28,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class GameServiceImpl implements GameService {
 
-    private final CardRepository cardRepository;
-    private final CardMapper cardMapper;
-    private final AbilityService abilityService;
+    private final EffectServiceImpl effectService;
 
     /** Хранилище активных игр */
     private final Map<String, GameState> games = new ConcurrentHashMap<>();
@@ -51,6 +44,7 @@ public class GameServiceImpl implements GameService {
         }
 
         games.put(gameId, gs);
+        gs.setStatus(GameStatus.IN_PROGRESS);
         log.info("Создана новая игра с ID {}", gameId);
 
         initGame(gs);
@@ -59,62 +53,78 @@ public class GameServiceImpl implements GameService {
 
     @Override
     public void playCard(GameState gs, String playerId, String cardId) {
+
         PlayerState player = getPlayerOrThrow(gs, playerId);
 
-        CardDto card = player.getHand().stream()
+        CardInstance card = player.getHand().stream()
                 .filter(c -> c.getId().equals(cardId))
                 .findFirst()
                 .orElseThrow(() -> new GameCommonException("CARD_NOT_IN_HAND", "Такой карты нет в руке"));
 
-        // Перемещаем карту в playedCard
-        player.getHand().remove(card);
-        player.getPlayedCard().add(card);
-
         // Применяем способности карты
-        abilityService.applyAbilities(card, player, gs, "PLAY");
+        effectService.applyPlayEffects(card,player,gs);
+
+        // Перемещаем карту в стопку сброса
+        player.getHand().remove(card);
+        player.getPlayedCards().add(card);
 
         log.info("Игрок {} сыграл карту {}. Золото: {}, Атака: {}",
-                playerId, card.getName(), player.getCurrentGold(), player.getCurrentAttack());
+                playerId, card.getDefinition().getName(), player.getCurrentGold(), player.getCurrentAttack());
+    }
+
+    @Override
+    public void scrapCard(GameState gs, String playerId, String cardId) {
+
+        PlayerState player = getPlayerOrThrow(gs, playerId);
+
+        CardInstance card = player.getHand().stream()
+                .filter(c -> c.getId().equals(cardId))
+                .findFirst()
+                .orElseThrow(() -> new GameCommonException("CARD_NOT_IN_HAND", "Такой карты нет в руке"));
+
+        if (card.getDefinition().getScrapEffects() == null || card.getDefinition().getScrapEffects().getEffects().isEmpty()) {
+            throw new GameCommonException("EMPTY_EFFECT", "У карты нет сброса");
+        }
+        effectService.applyScrapEffects(card,player,gs);
+        player.getHand().remove(card);
+
+        log.info("Игрок {} сбросил карту {}", playerId, card.getDefinition().getName());
     }
 
     @Override
     public void buyCard(GameState gs, String playerId, String marketCardId) {
         PlayerState player = getPlayerOrThrow(gs, playerId);
 
-        CardDto card = gs.getMarket().stream()
+        List<CardInstance> market = gs.getMarket();
+
+        CardInstance card = market.stream()
                 .filter(c -> c.getId().equals(marketCardId))
                 .findFirst()
                 .orElseThrow(() -> new GameCommonException("CARD_NOT_IN_MARKET", "Карты нет в магазине"));
 
-        if (player.getCurrentGold() < card.getCost()) {
+        if (player.getCurrentGold() < card.getDefinition().getCost()) {
             throw new GameCommonException("NOT_ENOUGH_GOLD", "Недостаточно золота");
         }
 
-        player.setCurrentGold(player.getCurrentGold() - card.getCost());
-        player.getDeck().add(card);
+        player.setCurrentGold(player.getCurrentGold() - card.getDefinition().getCost());
+        player.getDiscardPile().add(card);
 
-        int idx = gs.getMarket().indexOf(card);
-        gs.getMarket().remove(idx);
+        market.remove(card);
 
         if (!gs.getMarketDeck().isEmpty()) {
-            gs.getMarket().add(idx, gs.getMarketDeck().removeFirst());
+            market.add(gs.getMarketDeck().removeFirst());
         }
 
-        // Применяем способности карты при покупке, если есть
-//        abilityService.applyAbilitiesOnPurchase(card, player, gs);
-
-        log.info("Игрок {} купил карту {}", playerId, card.getName());
+        log.info("Игрок {} купил карту {}", playerId, card.getDefinition().getName());
     }
 
     @Override
     public void attack(GameState gs, String playerId) {
         PlayerState player = getPlayerOrThrow(gs, playerId);
 
-        // Рассчитываем атаку с учетом способностей всех сыгранных карт
-        int totalAttack = player.getPlayedCard().stream()
-                .mapToInt(card -> abilityService.getAttackValue(card,player,gs))
-                .sum();
-        player.setCurrentAttack(totalAttack);
+        if (!player.getHand().isEmpty()) {
+            throw new GameCommonException("HAND_NOT_EMPTY", "Рука не пуста");
+        }
 
         String opponentId = gs.getPlayers().keySet().stream()
                 .filter(id -> !id.equals(playerId))
@@ -143,11 +153,9 @@ public class GameServiceImpl implements GameService {
             throw new GameCommonException("HAND_NOT_EMPTY", "Рука не пуста");
         }
 
-        // Сбрасываем сыгранные карты
-        player.getDiscardPile().addAll(player.getPlayedCard());
-        player.getPlayedCard().clear();
         player.setCurrentAttack(0);
         player.setCurrentGold(0);
+        player.getDiscardPile().addAll(player.getPlayedCards());
 
         // Определяем следующего игрока
         String nextId = gs.getPlayers().keySet().stream()
@@ -158,6 +166,7 @@ public class GameServiceImpl implements GameService {
         gs.setActivePlayerId(nextId);
 
         PlayerState nextPlayer = gs.getPlayers().get(nextId);
+
         if (nextPlayer.getHand().isEmpty()) {
             drawCardsToHand(nextPlayer, 5);
         }
@@ -169,58 +178,32 @@ public class GameServiceImpl implements GameService {
 
     private void initGame(GameState gs) {
         log.info("Инициализация игры...");
-
-        List<CardEntity> coreSet = cardRepository.findAllWithAbilities();
-
-        List<CardEntity> personalDeckCards = coreSet.stream()
-                .filter(c -> "Personal Deck".equals(c.getRole()))
-                .toList();
-
-        List<CardEntity> explorerCards = coreSet.stream()
-                .filter(c -> "Explorer Pile".equals(c.getRole()))
-                .toList();
-
-        List<CardEntity> tradeDeckCards = coreSet.stream()
-                .filter(c -> "Trade Deck".equals(c.getRole()))
-                .toList();
-
-        // Explorer Pile
-        List<CardDto> explorers = explorerCards.stream()
-                .flatMap(e -> expand(e).stream())
-                .toList();
-        gs.setExplorerPile(new ArrayDeque<>(explorers));
-
-        // Market Deck
-        List<CardDto> marketDeck = tradeDeckCards.stream()
-                .flatMap(e -> expand(e).stream())
+        // Рынок
+        List<CardInstance> marketDeck = CardDefinitionUtil.getCoreSet().stream()
+                .flatMap(definition -> expand(definition).stream())
                 .collect(Collectors.toList());
         Collections.shuffle(marketDeck);
         gs.getMarketDeck().clear();
         gs.getMarketDeck().addAll(marketDeck);
 
-        // Personal Deck Map
-        Map<String, CardEntity> personalMap = personalDeckCards.stream()
-                .collect(Collectors.toMap(CardEntity::getName, c -> c));
+        // Колода пионеров
+        CardDefinition explorer = CardDefinitionUtil.getExplorer();
+        List<CardInstance> explorers = expand(explorer);
+        gs.getExplorerPile().clear();
+        gs.getExplorerPile().addAll(explorers);
 
         // Стартовые колоды игроков
-        int playerCount = gs.getPlayers().size();
-        for (PlayerState p : gs.getPlayers().values()) {
-            List<CardDto> deck = new ArrayList<>();
-
-            CardEntity scout = personalMap.get("Scout");
-            CardEntity viper = personalMap.get("Viper");
-
-            if (scout == null || viper == null) {
-                throw new GameCommonException("CORE_SET", "Scout или Viper не найдены");
-            }
-
-            for (int i = 0; i < scout.getQty() / playerCount; i++)
-                deck.add(cardMapper.fromEntity(scout));
-            for (int i = 0; i < viper.getQty() / playerCount; i++)
-                deck.add(cardMapper.fromEntity(viper));
-
+        int playersCount = gs.getPlayers().size();
+        CardDefinition scout = CardDefinitionUtil.getScout();
+        CardDefinition viper = CardDefinitionUtil.getViper();
+        for (PlayerState player : gs.getPlayers().values()) {
+            List<CardInstance> deck = new ArrayList<>();
+            for (int i = 0; i < scout.getCopies() / playersCount; i++)
+                deck.add(new CardInstance(scout));
+            for (int i = 0; i < viper.getCopies() / playersCount; i++)
+                deck.add(new CardInstance(viper));
             Collections.shuffle(deck);
-            p.setDeck(deck);
+            player.setDeck(deck);
         }
 
         // Выложить первые 5 карт рынка
@@ -233,30 +216,34 @@ public class GameServiceImpl implements GameService {
         List<String> ids = new ArrayList<>(gs.getPlayers().keySet());
         gs.setActivePlayerId(ids.get(new Random().nextInt(ids.size())));
 
-        // Все игроки берут по 5 карт
-        for (PlayerState p : gs.getPlayers().values()) {
-            drawCardsToHand(p, 5);
+        // Первый активный игрок берет 3 карты, остальные игроки 5 карт
+        for (PlayerState player : gs.getPlayers().values()) {
+            if (gs.getActivePlayerId().equals(player.getPlayerId())){
+                drawCardsToHand(player, 3);
+            } else {
+                drawCardsToHand(player, 5);
+            }
         }
 
         log.info("Инициализация завершена. Первый ход: {}", gs.getActivePlayerId());
     }
 
-    private void drawCardsToHand(PlayerState p, int n) {
+    private void drawCardsToHand(PlayerState player, int n) {
         for (int i = 0; i < n; i++) {
-            if (p.getDeck().isEmpty()) {
-                Collections.shuffle(p.getDiscardPile());
-                p.setDeck(new LinkedList<>(p.getDiscardPile()));
-                p.getDiscardPile().clear();
+            if (player.getDeck().isEmpty()) {
+                Collections.shuffle(player.getDiscardPile());
+                player.setDeck(new LinkedList<>(player.getDiscardPile()));
+                player.getDiscardPile().clear();
             }
-            if (p.getDeck().isEmpty()) break;
-            p.getHand().add(p.getDeck().removeFirst());
+            if (player.getDeck().isEmpty()) break;
+            player.getHand().add(player.getDeck().removeFirst());
         }
     }
 
-    private List<CardDto> expand(CardEntity e) {
-        List<CardDto> result = new ArrayList<>();
-        for (int i = 0; i < e.getQty(); i++) {
-            result.add(cardMapper.fromEntity(e));
+    private List<CardInstance> expand (CardDefinition definition) {
+        List<CardInstance> result = new ArrayList<>();
+        for (int i = 0; i < definition.getCopies(); i++) {
+            result.add(new CardInstance(definition));
         }
         return result;
     }

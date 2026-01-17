@@ -24,6 +24,14 @@ public interface GameService {
     void playCard(GameState gs, String playerId, String cardId);
 
     /**
+     * Игрок сбрасывает карту.
+     * @param gs объект {@link GameState} комнаты
+     * @param playerId ID игрока
+     * @param cardId   ID карты
+     */
+    void scrapCard(GameState gs, String playerId, String cardId);
+
+    /**
      * Игрок покупает карту из рынка.
      * @param gs           объект {@link GameState} комнаты
      * @param playerId     ID игрока
@@ -51,11 +59,4 @@ public interface GameService {
      * @return {@link Optional} с объектом {@link GameState} или пустой, если комната не найдена
      */
     Optional<GameState> findGame (String gameId);
-
-
-
-
-
-
-
 }

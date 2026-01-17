@@ -9,6 +9,6 @@ public record GameView (
         String activePlayerId,
         GameStatus status,
         List<PlayerView> players,
-        List<CardDto> market,
+        List<CardInstance> market,
         String winnerId
 ) {}

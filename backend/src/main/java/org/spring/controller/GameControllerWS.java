@@ -71,6 +71,20 @@ public class GameControllerWS {
         }
     }
 
+    @MessageMapping("/game.scrapCard")
+    public void scrapCard(@Payload PlayCardRequest req, Principal principal) {
+
+        GameState gs = validateAndGetGame(req.gameId(), principal);
+
+        synchronized (lockFor(gs.getId())) {
+            if (!gs.isPlayersTurn(principal.getName())) {
+                throw new GameCommonException("NOT_YOUR_TURN", "Не ваш ход");
+            }
+            gameService.scrapCard(gs, principal.getName(), req.cardId());
+            broadcastState(gs);
+        }
+    }
+
     @MessageMapping("/game.buyCard")
     public void buyCard(BuyCardRequest req, Principal principal) {
 

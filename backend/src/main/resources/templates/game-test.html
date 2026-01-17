@@ -14,10 +14,14 @@
         .played { background: #f0f0f0 }
         .winner { color: green; font-weight: bold }
 
-        .ability {
+        .effect {
             font-size: 12px;
             color: #444;
             margin-left: 8px;
+        }
+
+        .scrap {
+            color: #900;
         }
 
         .error {
@@ -44,9 +48,6 @@
 
 <h4>Your hand</h4>
 <div id="hand"></div>
-
-<h4>Played cards</h4>
-<div id="played"></div>
 
 <h4>Market</h4>
 <div id="market"></div>
@@ -96,15 +97,10 @@
 
     function render() {
         if (!gameView) return;
-
         renderStatus();
         renderPlayers();
         renderMarket();
-
-        if (privateView) {
-            renderHand();
-            renderPlayed();
-        }
+        if (privateView) renderHand();
     }
 
     function renderStatus() {
@@ -127,12 +123,14 @@
         });
     }
 
-    function renderAbilities(card) {
-        if (!card.abilities || card.abilities.length === 0) return "";
-
-        return card.abilities.map(a =>
-            `<div class="ability">• ${a.type} ${a.value} (${a.condition || "always"})</div>`
-        ).join("");
+    function renderEffects(title, set) {
+        if (!set || !set.effects || set.effects.length === 0) return "";
+        return `
+            <div class="effect"><strong>${title} (${set.type})</strong></div>
+            ${set.effects.map(e =>
+            `<div class="effect">• ${e.type} +${e.value}</div>`
+        ).join("")}
+        `;
     }
 
     function renderHand() {
@@ -142,25 +140,15 @@
         privateView.hand.forEach(c => {
             const d = document.createElement("div");
             d.className = "card";
+            const def = c.definition;
+
             d.innerHTML = `
-                <strong>${c.name}</strong> (Cost:${c.cost})
-                ${renderAbilities(c)}
+                <strong>${def.name}</strong> (${def.faction}, cost:${def.cost})
+                ${renderEffects("Main", def.mainEffects)}
+                ${renderEffects("Faction Lvl1", def.factionEffectsLvl1)}
+                ${renderEffects("Scrap", def.scrapEffects)}
                 <button onclick="play('${c.id}')">Play</button>
-            `;
-            div.appendChild(d);
-        });
-    }
-
-    function renderPlayed() {
-        const div = document.getElementById("played");
-        div.innerHTML = "";
-
-        privateView.playedCards.forEach(c => {
-            const d = document.createElement("div");
-            d.className = "card played";
-            d.innerHTML = `
-                <strong>${c.name}</strong>
-                ${renderAbilities(c)}
+                <button onclick="scrap('${c.id}')">Scrap</button>
             `;
             div.appendChild(d);
         });
@@ -173,9 +161,12 @@
         gameView.market.forEach(c => {
             const d = document.createElement("div");
             d.className = "card";
+            const def = c.definition;
+
             d.innerHTML = `
-                <strong>${c.name}</strong> (Cost:${c.cost})
-                ${renderAbilities(c)}
+                <strong>${def.name}</strong> (${def.faction}, cost:${def.cost})
+                ${renderEffects("Main", def.mainEffects)}
+                ${renderEffects("Faction Lvl1", def.factionEffectsLvl1)}
                 <button onclick="buy('${c.id}')">Buy</button>
             `;
             div.appendChild(d);
@@ -185,6 +176,13 @@
     function play(cardId) {
         client.publish({
             destination: "/app/game.playCard",
+            body: JSON.stringify({ gameId, cardId })
+        });
+    }
+
+    function scrap(cardId) {
+        client.publish({
+            destination: "/app/game.scrapCard",
             body: JSON.stringify({ gameId, cardId })
         });
     }

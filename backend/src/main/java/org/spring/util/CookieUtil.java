@@ -10,7 +10,7 @@ public class CookieUtil {
         cookie.setHttpOnly(true); // true-кука недоступна из JavaScript на стороне клиента, повышает безопасность
         cookie.setSecure(false);       // true-кука будет передаваться только по HTTPS
         cookie.setPath("/"); // кука отправляется только сюда
-        cookie.setMaxAge(60 * 60 * 24 * 1); // время жизни куки 1 день
+        cookie.setMaxAge(60 * 60 * 24); // время жизни куки 1 день
         cookie.setDomain("localhost"); //  домен, для которого действительна кука
         cookie.setAttribute("SameSite", "Lax");
         // для SameSite=None обязательно наличие Secure=true (HTTPS), иначе браузер может игнорировать куку.

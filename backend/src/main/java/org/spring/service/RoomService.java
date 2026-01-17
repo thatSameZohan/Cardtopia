@@ -4,7 +4,6 @@ import org.spring.dto.GameState;
 import org.spring.dto.Room;
 
 import java.util.Collection;
-import java.util.Optional;
 
 public interface RoomService {
 
@@ -19,8 +18,6 @@ public interface RoomService {
     void deleteRoom(String roomId, String username);
 
     Collection<Room> listRooms();
-
-    Optional<Room> findRoom(String roomId);
 
     boolean isUserInAnyRoom(String username);
 
