@@ -1,7 +1,6 @@
 package org.spring.dto;
 
 import org.spring.enums.GameStatus;
-
 import java.util.List;
 
 public record GameView (
@@ -9,6 +8,8 @@ public record GameView (
         String activePlayerId,
         GameStatus status,
         List<PlayerView> players,
-        List<CardDto> market,
-        String winnerId
+        List<CardInstance> market,
+        Integer marketDeckSize,
+        String winnerId,
+        List<CardInstance> explorerPile
 ) {}

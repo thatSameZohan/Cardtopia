@@ -66,7 +66,7 @@ public class GameControllerWS {
             if (!gs.isPlayersTurn(principal.getName())) {
                 throw new GameCommonException("NOT_YOUR_TURN", "Не ваш ход");
             }
-            gameService.playCard(gs, principal.getName(), req.cardId());
+            gameService.playCard(gs, principal.getName(), req.cardId(), req.scrap());
             broadcastState(gs);
         }
     }
@@ -85,7 +85,6 @@ public class GameControllerWS {
         }
     }
 
-
     @MessageMapping("/game.attack")
     public void attack(AttackRequest req, Principal principal) {
 
@@ -95,7 +94,7 @@ public class GameControllerWS {
             if (!gs.isPlayersTurn(principal.getName())) {
                 throw new GameCommonException("NOT_YOUR_TURN", "Не ваш ход");
             }
-            gameService.attack(gs, principal.getName());
+            gameService.attack(gs, principal.getName(), req);
             broadcastState(gs);
         }
     }
@@ -110,6 +109,21 @@ public class GameControllerWS {
                 throw new GameCommonException("NOT_YOUR_TURN", "Не ваш ход");
             }
             gameService.endTurn(gs, principal.getName());
+            broadcastState(gs);
+        }
+    }
+
+    @MessageMapping("/game.scrapStructure")
+    public void scrapStructure(@Payload ScrapStructureRequest req, Principal principal) {
+
+        GameState gs = validateAndGetGame(req.gameId(), principal);
+
+        synchronized (lockFor(gs.getId())) {
+            if (!gs.isPlayersTurn(principal.getName())) {
+                throw new GameCommonException("NOT_YOUR_TURN", "Не ваш ход");
+            }
+
+            gameService.scrapStructure(gs, principal.getName(), req.cardId());
             broadcastState(gs);
         }
     }

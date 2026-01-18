@@ -13,17 +13,17 @@ import java.util.*;
 public class GameState {
 
     private final String id;
-    private final Map<String, PlayerState> players = new LinkedHashMap<>();
+    private Map<String, PlayerState> players = new LinkedHashMap<>();
     private GameStatus status;
     private String activePlayerId;
-    private final Deque<CardDto> marketDeck = new ArrayDeque<>();
-    private final List<CardDto> market = new ArrayList<>(5);
+    private List<CardInstance> marketDeck = new LinkedList<>();
+    private List<CardInstance> market = new ArrayList<>(5);
     private String winnerId;
-    private Deque<CardDto> explorerPile = new ArrayDeque<>();
+    private List<CardInstance> explorerPile = new ArrayList<>();
 
     public GameState(String id) {
         this.id = id;
-        this.status = GameStatus.IN_PROGRESS;
+        this.status = GameStatus.WAITING_FOR_PLAYER;
     }
 
     public boolean isPlayersTurn(String playerId) {

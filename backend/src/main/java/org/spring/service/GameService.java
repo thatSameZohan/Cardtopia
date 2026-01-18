@@ -1,5 +1,6 @@
 package org.spring.service;
 
+import org.spring.dto.AttackRequest;
 import org.spring.dto.GameState;
 import org.spring.dto.Room;
 
@@ -21,7 +22,7 @@ public interface GameService {
      * @param playerId ID игрока
      * @param cardId   ID карты
      */
-    void playCard(GameState gs, String playerId, String cardId);
+    void playCard(GameState gs, String playerId, String cardId, boolean scrap);
 
     /**
      * Игрок покупает карту из рынка.
@@ -36,7 +37,7 @@ public interface GameService {
      * @param gs объект {@link GameState} комнаты
      * @param playerId ID игрока
      */
-    void attack(GameState gs, String playerId);
+    void attack(GameState gs, String playerId, AttackRequest req);
 
     /**
      * Завершает ход игрока и передаёт ход следующему.
@@ -45,17 +46,12 @@ public interface GameService {
      */
     void endTurn(GameState gs, String playerId);
 
+    void scrapStructure(GameState gs, String playerId, String cardId);
+
     /**
      * Находит игровую комнату по её ID.
      * @param gameId ID комнаты
      * @return {@link Optional} с объектом {@link GameState} или пустой, если комната не найдена
      */
     Optional<GameState> findGame (String gameId);
-
-
-
-
-
-
-
 }
