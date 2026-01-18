@@ -52,7 +52,7 @@ public class GameServiceImpl implements GameService {
     }
 
     @Override
-    public void playCard(GameState gs, String playerId, String cardId) {
+    public void playCard(GameState gs, String playerId, String cardId, boolean scrap) {
 
         PlayerState player = getPlayerOrThrow(gs, playerId);
 
@@ -64,58 +64,48 @@ public class GameServiceImpl implements GameService {
         // Применяем способности карты
         effectService.applyPlayEffects(card,player,gs);
 
-        // Перемещаем карту в стопку сброса
+        // Применяем эффекты сброса карты
+        if (scrap) {
+            effectService.applyScrapEffects(card,player,gs);
+            log.info("Игрок {} сбрасывает в утиль карту {}", playerId, card.getDefinition().getName());
+        } else {
+            // Перемещаем карту в сыгранные
+            player.getPlayedCards().add(card);
+        }
         player.getHand().remove(card);
-        player.getPlayedCards().add(card);
 
-        log.info("Игрок {} сыграл карту {}. Золото: {}, Атака: {}",
-                playerId, card.getDefinition().getName(), player.getCurrentGold(), player.getCurrentAttack());
+        log.info("Игрок {} сыграл карту {}. Золото: {}, Атака: {}", playerId, card.getDefinition().getName(), player.getCurrentGold(), player.getCurrentAttack());
     }
 
     @Override
-    public void scrapCard(GameState gs, String playerId, String cardId) {
+    public void buyCard(GameState gs, String playerId, String cardId) {
 
         PlayerState player = getPlayerOrThrow(gs, playerId);
+        CardInstance card;
 
-        CardInstance card = player.getHand().stream()
+        // 1. Пытаемся купить из рынка
+        Optional<CardInstance> marketCard = gs.getMarket().stream()
                 .filter(c -> c.getId().equals(cardId))
-                .findFirst()
-                .orElseThrow(() -> new GameCommonException("CARD_NOT_IN_HAND", "Такой карты нет в руке"));
+                .findFirst();
 
-        if (card.getDefinition().getScrapEffects() == null || card.getDefinition().getScrapEffects().getEffects().isEmpty()) {
-            throw new GameCommonException("EMPTY_EFFECT", "У карты нет сброса");
-        }
-        effectService.applyScrapEffects(card,player,gs);
-        player.getHand().remove(card);
-
-        log.info("Игрок {} сбросил карту {}", playerId, card.getDefinition().getName());
-    }
-
-    @Override
-    public void buyCard(GameState gs, String playerId, String marketCardId) {
-        PlayerState player = getPlayerOrThrow(gs, playerId);
-
-        List<CardInstance> market = gs.getMarket();
-
-        CardInstance card = market.stream()
-                .filter(c -> c.getId().equals(marketCardId))
-                .findFirst()
-                .orElseThrow(() -> new GameCommonException("CARD_NOT_IN_MARKET", "Карты нет в магазине"));
-
-        if (player.getCurrentGold() < card.getDefinition().getCost()) {
-            throw new GameCommonException("NOT_ENOUGH_GOLD", "Недостаточно золота");
+        if (marketCard.isPresent()) {
+            card = marketCard.get();
+            buyFromMarket(gs, player, card);
+            return;
         }
 
-        player.setCurrentGold(player.getCurrentGold() - card.getDefinition().getCost());
-        player.getDiscardPile().add(card);
+        // 2. Пытаемся купить Explorer
+        Optional<CardInstance> explorerCard = gs.getExplorerPile().stream()
+                .filter(c -> c.getId().equals(cardId))
+                .findFirst();
 
-        market.remove(card);
-
-        if (!gs.getMarketDeck().isEmpty()) {
-            market.add(gs.getMarketDeck().removeFirst());
+        if (explorerCard.isPresent()) {
+            card = explorerCard.get();
+            buyFromExplorer(gs, player, card);
+            return;
         }
 
-        log.info("Игрок {} купил карту {}", playerId, card.getDefinition().getName());
+        throw new GameCommonException("CARD_NOT_AVAILABLE", "Карты нет ни в рынке, ни в стопке Explorer");
     }
 
     @Override
@@ -153,9 +143,13 @@ public class GameServiceImpl implements GameService {
             throw new GameCommonException("HAND_NOT_EMPTY", "Рука не пуста");
         }
 
-        player.setCurrentAttack(0);
+        if (player.getCurrentAttack() != 0){
+            throw new GameCommonException("MAKE_ATTACK", "Сначала совершите атаку");
+        }
+
         player.setCurrentGold(0);
         player.getDiscardPile().addAll(player.getPlayedCards());
+        player.getPlayedCards().clear();
 
         // Определяем следующего игрока
         String nextId = gs.getPlayers().keySet().stream()
@@ -172,6 +166,11 @@ public class GameServiceImpl implements GameService {
         }
 
         log.info("Ход завершен для игрока {}", playerId);
+    }
+
+    @Override
+    public Optional<GameState> findGame(String gameId) {
+        return Optional.ofNullable(games.get(gameId));
     }
 
     /* ========================= UTIL ========================= */
@@ -257,8 +256,42 @@ public class GameServiceImpl implements GameService {
         return player;
     }
 
-    @Override
-    public Optional<GameState> findGame(String gameId) {
-        return Optional.ofNullable(games.get(gameId));
+    private void buyFromMarket(GameState gs, PlayerState player, CardInstance card) {
+
+        int cost = card.getDefinition().getCost();
+
+        if (player.getCurrentGold() < cost) {
+            throw new GameCommonException("NOT_ENOUGH_GOLD", "Недостаточно золота");
+        }
+
+        player.setCurrentGold(player.getCurrentGold() - cost);
+        player.getDiscardPile().add(card);
+
+        gs.getMarket().remove(card);
+
+        // добираем рынок
+        if (!gs.getMarketDeck().isEmpty()) {
+            gs.getMarket().add(gs.getMarketDeck().removeFirst());
+        }
+
+        log.info("Игрок {} купил карту {} из рынка", player.getPlayerId(), card.getDefinition().getName());
     }
+
+    private void buyFromExplorer(GameState gs, PlayerState player, CardInstance card) {
+
+        int cost = card.getDefinition().getCost();
+
+        if (player.getCurrentGold() < cost) {
+            throw new GameCommonException("NOT_ENOUGH_GOLD", "Недостаточно золота");
+        }
+
+        player.setCurrentGold(player.getCurrentGold() - cost);
+        player.getDiscardPile().add(card);
+
+        gs.getExplorerPile().remove(card);
+
+        log.info("Игрок {} купил карту Explorer {}", player.getPlayerId(), card.getDefinition().getName());
+    }
+
+
 }

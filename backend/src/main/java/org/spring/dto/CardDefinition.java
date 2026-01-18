@@ -15,6 +15,7 @@ public class CardDefinition {
     private CardType type;
     private Faction faction;
     private int cost;
+    private int defense;
 
     private SetEffects mainEffects;
     private SetEffects factionEffectsLvl1;

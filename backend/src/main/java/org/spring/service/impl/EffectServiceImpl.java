@@ -41,7 +41,7 @@ public class EffectServiceImpl implements EffectService {
         switch (effect.getType()) {
             case COMBAT -> player.setCurrentAttack(
                     player.getCurrentAttack() + effect.getValue());
-            case TRADE -> player.setCurrentGold(
+            case GOLD -> player.setCurrentGold(
                     player.getCurrentGold() + effect.getValue());
             case DRAW -> draw(player, effect.getValue());
             case HEALTH -> player.setHealth(

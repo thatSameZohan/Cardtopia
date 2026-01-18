@@ -66,21 +66,7 @@ public class GameControllerWS {
             if (!gs.isPlayersTurn(principal.getName())) {
                 throw new GameCommonException("NOT_YOUR_TURN", "Не ваш ход");
             }
-            gameService.playCard(gs, principal.getName(), req.cardId());
-            broadcastState(gs);
-        }
-    }
-
-    @MessageMapping("/game.scrapCard")
-    public void scrapCard(@Payload PlayCardRequest req, Principal principal) {
-
-        GameState gs = validateAndGetGame(req.gameId(), principal);
-
-        synchronized (lockFor(gs.getId())) {
-            if (!gs.isPlayersTurn(principal.getName())) {
-                throw new GameCommonException("NOT_YOUR_TURN", "Не ваш ход");
-            }
-            gameService.scrapCard(gs, principal.getName(), req.cardId());
+            gameService.playCard(gs, principal.getName(), req.cardId(), req.scrap());
             broadcastState(gs);
         }
     }

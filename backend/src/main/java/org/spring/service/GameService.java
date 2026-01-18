@@ -21,15 +21,7 @@ public interface GameService {
      * @param playerId ID игрока
      * @param cardId   ID карты
      */
-    void playCard(GameState gs, String playerId, String cardId);
-
-    /**
-     * Игрок сбрасывает карту.
-     * @param gs объект {@link GameState} комнаты
-     * @param playerId ID игрока
-     * @param cardId   ID карты
-     */
-    void scrapCard(GameState gs, String playerId, String cardId);
+    void playCard(GameState gs, String playerId, String cardId, boolean scrap);
 
     /**
      * Игрок покупает карту из рынка.

@@ -24,7 +24,9 @@ public class ViewMapper {
                 gs.getStatus(),
                 players,
                 List.copyOf(gs.getMarket()),
-                gs.getWinnerId()
+                gs.getMarketDeck().size(),
+                gs.getWinnerId(),
+                gs.getExplorerPile()
         );
     }
 
