@@ -3,6 +3,7 @@ package org.spring.service.impl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.spring.dto.*;
+import org.spring.enums.CardType;
 import org.spring.enums.GameStatus;
 import org.spring.exc.GameCommonException;
 import org.spring.service.GameService;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Сервис управления игровой логикой.
@@ -109,11 +111,12 @@ public class GameServiceImpl implements GameService {
     }
 
     @Override
-    public void attack(GameState gs, String playerId) {
-        PlayerState player = getPlayerOrThrow(gs, playerId);
+    public void attack(GameState gs, String playerId, AttackRequest req) {
 
-        if (!player.getHand().isEmpty()) {
-            throw new GameCommonException("HAND_NOT_EMPTY", "Рука не пуста");
+        PlayerState attacker = getPlayerOrThrow(gs, playerId);
+
+        if (!attacker.getHand().isEmpty()) {
+            throw new GameCommonException("HAND_NOT_EMPTY", "Разыграйте все карты в руке");
         }
 
         String opponentId = gs.getPlayers().keySet().stream()
@@ -123,8 +126,26 @@ public class GameServiceImpl implements GameService {
 
         PlayerState opponent = gs.getPlayers().get(opponentId);
 
-        opponent.setHealth(opponent.getHealth() - player.getCurrentAttack());
-        player.setCurrentAttack(0);
+        int attack = attacker.getCurrentAttack();
+
+        // 1 Есть аванпосты — атакуем их
+        if (!opponent.getOutposts().isEmpty()) {
+            if (!"OUTPOST".equals(req.targetType())) {
+                throw new GameCommonException("OUTPOST_FIRST", "Сначала нужно уничтожить аванпост");
+            }
+            attackStructure(attacker, opponent.getOutposts(), req.targetId());
+            return;
+        }
+
+        // 2️ База (по желанию)
+        if ("BASE".equals(req.targetType())) {
+            attackStructure(attacker, opponent.getBases(), req.targetId());
+            return;
+        }
+
+        // 3️ Атака игрока
+        opponent.setHealth(opponent.getHealth() - attack);
+        attacker.setCurrentAttack(0);
 
         log.info("Атака: игрок {} -> оппонент {}, здоровье оппонента {}", playerId, opponentId, opponent.getHealth());
 
@@ -143,11 +164,12 @@ public class GameServiceImpl implements GameService {
             throw new GameCommonException("HAND_NOT_EMPTY", "Рука не пуста");
         }
 
-        if (player.getCurrentAttack() != 0){
-            throw new GameCommonException("MAKE_ATTACK", "Сначала совершите атаку");
-        }
+//        if (player.getCurrentAttack() != 0){
+//            throw new GameCommonException("MAKE_ATTACK", "Сначала совершите атаку");
+//        }
 
         player.setCurrentGold(0);
+        player.setCurrentAttack(0);
         player.getDiscardPile().addAll(player.getPlayedCards());
         player.getPlayedCards().clear();
 
@@ -162,11 +184,49 @@ public class GameServiceImpl implements GameService {
         PlayerState nextPlayer = gs.getPlayers().get(nextId);
 
         if (nextPlayer.getHand().isEmpty()) {
+
             drawCardsToHand(nextPlayer, 5);
+
+            Iterator<CardInstance> iterator = nextPlayer.getHand().iterator();
+
+            while (iterator.hasNext()) {
+                CardInstance card = iterator.next();
+                CardType type = card.getDefinition().getType();
+
+                if (type == CardType.BASE) {
+                    nextPlayer.getBases().add(card);
+                    iterator.remove();
+                } else if (type == CardType.OUTPOST) {
+                    nextPlayer.getOutposts().add(card);
+                    iterator.remove();
+                }
+            }
         }
+
+        activateStructures(nextPlayer, gs);
 
         log.info("Ход завершен для игрока {}", playerId);
     }
+
+    @Override
+    public void scrapStructure(GameState gs, String playerId, String cardId) {
+        PlayerState player = getPlayerOrThrow(gs, playerId);
+
+        CardInstance card = Stream.concat(
+                        player.getBases().stream(),
+                        player.getOutposts().stream()
+                )
+                .filter(c -> c.getId().equals(cardId))
+                .findFirst()
+                .orElseThrow(() -> new GameCommonException("STRUCTURE_NOT_FOUND", "Структура не найдена"));
+
+        effectService.applyScrapEffects(card, player, gs);
+
+        player.getBases().remove(card);
+        player.getOutposts().remove(card);
+        player.getDiscardPile().add(card);
+    }
+
 
     @Override
     public Optional<GameState> findGame(String gameId) {
@@ -292,6 +352,38 @@ public class GameServiceImpl implements GameService {
 
         log.info("Игрок {} купил карту Explorer {}", player.getPlayerId(), card.getDefinition().getName());
     }
+
+    private void activateStructures(PlayerState player, GameState gs) {
+        player.getBases().forEach(c ->
+                effectService.applyPlayEffects(c, player, gs)
+        );
+        player.getOutposts().forEach(c ->
+                effectService.applyPlayEffects(c, player, gs)
+        );
+    }
+
+    private void attackStructure(PlayerState attacker,
+                                 List<CardInstance> structures,
+                                 String targetId) {
+
+        CardInstance target = structures.stream()
+                .filter(c -> c.getId().equals(targetId))
+                .findFirst()
+                .orElseThrow(() -> new GameCommonException("TARGET_NOT_FOUND", "Цель не найдена"));
+
+        int defense = target.getDefinition().getDefense();
+
+        if (attacker.getCurrentAttack() < defense) {
+            attacker.setCurrentAttack(0);
+            return;
+        }
+
+        attacker.setCurrentAttack(attacker.getCurrentAttack() - defense);
+        structures.remove(target);
+        attacker.getDiscardPile().add(target);
+    }
+
+
 
 
 }

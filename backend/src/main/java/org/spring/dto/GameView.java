@@ -1,8 +1,6 @@
 package org.spring.dto;
 
 import org.spring.enums.GameStatus;
-
-import java.util.ArrayList;
 import java.util.List;
 
 public record GameView (

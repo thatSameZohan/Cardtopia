@@ -12,15 +12,8 @@
         .active { background: #e6ffe6 }
         .card { border: 1px solid #aaa; padding: 6px; margin: 6px }
         .winner { color: green; font-weight: bold }
-
-        .effect {
-            font-size: 12px;
-            color: #444;
-            margin-left: 10px;
-        }
-
-        .scrap { color: #900; }
-
+        .effect { font-size: 12px; color: #444; margin-left: 10px }
+        .scrap { color: #900 }
         .error {
             background: #ffe6e6;
             color: #900;
@@ -28,10 +21,10 @@
             margin-bottom: 10px;
             border: 1px solid #d00;
         }
-
-        .explorer {
-            background: #f5f5ff;
-        }
+        .explorer { background: #f5f5ff }
+        .structure { background: #f0fff0 }
+        .outpost { background: #fff0f0 }
+        button { margin-top: 4px }
     </style>
 </head>
 <body>
@@ -41,11 +34,11 @@
 <div id="errors"></div>
 <div id="status"></div>
 
-<button onclick="attack()">Attack</button>
+<button onclick="attackPlayer()">Attack player</button>
 <button onclick="endTurn()">End turn</button>
 
 <h4>Players</h4>
-<ul id="players"></ul>
+<div id="players"></div>
 
 <h4>Your hand</h4>
 <div id="hand"></div>
@@ -71,7 +64,6 @@
         connectHeaders: { Authorization: "Bearer " + token },
 
         onConnect: () => {
-
             client.subscribe("/topic/game." + gameId, msg => {
                 gameView = JSON.parse(msg.body);
                 render();
@@ -116,33 +108,65 @@
 
     function renderStatus() {
         document.getElementById("status").innerHTML = `
-            Status: ${gameView.status}
-            ${gameView.winnerId ? `<div class="winner">Winner: ${gameView.winnerId}</div>` : ""}
-        `;
+        Status: ${gameView.status}
+        ${gameView.winnerId ? `<div class="winner">Winner: ${gameView.winnerId}</div>` : ""}
+    `;
     }
 
     function renderPlayers() {
-        const ul = document.getElementById("players");
-        ul.innerHTML = "";
+        const div = document.getElementById("players");
+        div.innerHTML = "";
 
         gameView.players.forEach(p => {
-            const li = document.createElement("li");
-            li.className = p.active ? "active" : "";
-            li.textContent =
-                `${p.playerId} | HP:${p.health} | ATK:${p.currentAttack} | GOLD:${p.currentGold} | HAND:${p.handSize}`;
-            ul.appendChild(li);
+            const d = document.createElement("div");
+            d.className = p.active ? "active" : "";
+
+            d.innerHTML = `
+            <strong>${p.playerId}</strong>
+            | HP:${p.health} | ATK:${p.currentAttack} | GOLD:${p.currentGold}
+            <div>
+                <strong>Bases</strong>
+                ${p.bases.map(b => renderStructure(b, "BASE")).join("")}
+            </div>
+            <div>
+                <strong>Outposts</strong>
+                ${p.outposts.map(o => renderStructure(o, "OUTPOST")).join("")}
+            </div>
+        `;
+            div.appendChild(d);
         });
     }
 
-    function renderEffects(title, set, extraClass = "") {
+    function renderStructure(c, type) {
+        const def = c.definition;
+        const canScrap = def.scrapEffects && def.scrapEffects.effects.length > 0;
+
+        return `
+        <div class="card ${type === 'OUTPOST' ? 'outpost' : 'structure'}">
+            <strong>${def.name}</strong>
+                <div>Type: ${def.type}</div>
+                <div>Faction: ${def.faction}</div>
+                <div>Def: ${def.defense}</div>
+            ${renderEffects("Main", def.mainEffects)}
+            ${renderEffects("Faction", def.factionEffectsLvl1)}
+            ${renderEffects("Scrap", def.scrapEffects)}
+            <button onclick="attackStructure('${type}', '${c.id}')">Attack</button>
+            ${canScrap ? `<button onclick="scrapStructure('${c.id}')">Scrap</button>` : ""}
+        </div>
+    `;
+    }
+
+    function renderEffects(title, set, cls = "") {
         if (!set || !set.effects || set.effects.length === 0) return "";
         return `
-            <div class="effect ${extraClass}">
-                <strong>${title} (${set.type})</strong>
-                ${set.effects.map(e => `• ${e.type} +${e.value}`).join(", ")}
-            </div>
-        `;
+        <div class="effect ${cls}">
+            <strong>${title}</strong>
+            ${set.effects.map(e => `• ${e.type} +${e.value}`).join(", ")}
+            type: ${set.type}
+        </div>
+    `;
     }
+
 
     function renderHand() {
         const div = document.getElementById("hand");
@@ -150,40 +174,44 @@
 
         privateView.hand.forEach(c => {
             const def = c.definition;
-            const hasScrap = def.scrapEffects && def.scrapEffects.effects.length > 0;
+
+            const hasScrap =
+                def.scrapEffects &&
+                def.scrapEffects.effects &&
+                def.scrapEffects.effects.length > 0;
+
             const checkboxId = `scrap-${c.id}`;
 
             const d = document.createElement("div");
             d.className = "card";
 
             d.innerHTML = `
-                <strong>${def.name}</strong> (${def.faction}, cost:${def.cost})
-                ${renderEffects("Main", def.mainEffects)}
-                ${renderEffects("Faction Lvl1", def.factionEffectsLvl1)}
-                ${renderEffects("Scrap", def.scrapEffects, "scrap")}
-                ${hasScrap ? `
-                    <label>
-                        <input type="checkbox" id="${checkboxId}">
-                        Scrap
-                    </label>
-                ` : ""}
-                <button onclick="play('${c.id}', ${hasScrap})">Play</button>
-            `;
+            <strong>${def.name}</strong>
+            <div>Type: ${def.type}</div>
+            <div>Faction: ${def.faction}</div>
+            ${renderEffects("Main", def.mainEffects)}
+            ${renderEffects("Faction Lvl1", def.factionEffectsLvl1)}
+            ${renderEffects("Scrap", def.scrapEffects, "scrap")}
+
+            ${hasScrap ? `
+                <label>
+                    <input type="checkbox" id="${checkboxId}">
+                    Scrap
+                </label>
+            ` : ""}
+
+            <button onclick="play('${c.id}', ${hasScrap})">Play</button>
+        `;
 
             div.appendChild(d);
         });
     }
 
     function renderPlayed() {
-        const div = document.getElementById("played");
+        const div = document.getElementById("playedCards");
         div.innerHTML = "";
-
-        privateView.playedCards.forEach(c => {
-            const def = c.definition;
-            const d = document.createElement("div");
-            d.className = "card";
-            d.innerHTML = `<strong>${def.name}</strong>`;
-            div.appendChild(d);
+        privateView.playedCards?.forEach(c => {
+            div.innerHTML += `<div class="card">${c.definition.name}</div>`;
         });
     }
 
@@ -193,16 +221,18 @@
 
         gameView.market.forEach(c => {
             const def = c.definition;
-            const d = document.createElement("div");
-            d.className = "card";
-
-            d.innerHTML = `
-                <strong>${def.name}</strong> (${def.faction}, cost:${def.cost})
+            div.innerHTML += `
+            <div class="card">
+                <strong>${def.name}</strong>
+                <div>Type: ${def.type}</div>
+                <div>Faction: ${def.faction}</div>
+                <div>Cost: ${def.cost}</div>
                 ${renderEffects("Main", def.mainEffects)}
-                ${renderEffects("Faction Lvl1", def.factionEffectsLvl1)}
+                ${renderEffects("Faction", def.factionEffectsLvl1)}
+                ${renderEffects("Scrap", def.scrapEffects)}
                 <button onclick="buy('${c.id}')">Buy</button>
-            `;
-            div.appendChild(d);
+            </div>
+        `;
         });
     }
 
@@ -210,31 +240,30 @@
         const div = document.getElementById("explorer");
         div.innerHTML = "";
 
-        if (!gameView.explorerPile || gameView.explorerPile.length === 0) {
-            div.innerHTML = "<i>Explorer pile is empty</i>";
+        if (!gameView.explorerPile.length) {
+            div.innerHTML = "<i>Explorer pile empty</i>";
             return;
         }
 
-        const c = gameView.explorerPile[0]; // 👈 ТОЛЬКО первая карта
+        const c = gameView.explorerPile[0];
         const def = c.definition;
 
-        const d = document.createElement("div");
-        d.className = "card explorer";
-
-        d.innerHTML = `
-        <strong>${def.name}</strong> (${def.faction}, cost:${def.cost})
-        ${renderEffects("Main", def.mainEffects)}
-        <div class="effect">
-            Cards left: ${gameView.explorerPile.length}
+        div.innerHTML = `
+        <div class="card explorer">
+            <strong>${def.name}</strong> (cost:${def.cost})
+            ${renderEffects("Main", def.mainEffects)}
+            ${renderEffects("Scrap", def.scrapEffects)}
+            <div class="effect">Cards left: ${gameView.explorerPile.length}</div>
+            <button onclick="buy('${c.id}')">Buy</button>
         </div>
-        <button onclick="buy('${c.id}')">Buy</button>
     `;
-
-        div.appendChild(d);
     }
+
+    /* ========= ACTIONS ========= */
 
     function play(cardId, hasScrap) {
         let scrap = false;
+
         if (hasScrap) {
             const checkbox = document.getElementById("scrap-" + cardId);
             scrap = checkbox && checkbox.checked;
@@ -246,6 +275,7 @@
         });
     }
 
+
     function buy(cardId) {
         client.publish({
             destination: "/app/game.buyCard",
@@ -253,10 +283,31 @@
         });
     }
 
-    function attack() {
+    function attackStructure(type, id) {
         client.publish({
             destination: "/app/game.attack",
-            body: JSON.stringify({ gameId })
+            body: JSON.stringify({
+                gameId,
+                targetType: type,
+                targetId: id
+            })
+        });
+    }
+
+    function attackPlayer() {
+        client.publish({
+            destination: "/app/game.attack",
+            body: JSON.stringify({
+                gameId,
+                targetType: "PLAYER"
+            })
+        });
+    }
+
+    function scrapStructure(cardId) {
+        client.publish({
+            destination: "/app/game.scrapStructure",
+            body: JSON.stringify({ gameId, cardId })
         });
     }
 

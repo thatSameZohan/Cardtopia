@@ -2,10 +2,13 @@ package org.spring.service.impl;
 
 import org.spring.dto.*;
 import org.spring.enums.Faction;
+import org.spring.exc.GameCommonException;
 import org.spring.service.EffectService;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
+import java.util.List;
+import java.util.stream.Stream;
 
 
 @Service
@@ -59,21 +62,17 @@ public class EffectServiceImpl implements EffectService {
             return false;
         }
 
-        long countHand = player.getHand().stream()
-                .filter(c ->
-                        c.getDefinition().getFaction() == faction &&
-                                c != card
-                )
+        long count = Stream.of(
+                        player.getHand(),
+                        player.getPlayedCards(),
+                        player.getBases(),
+                        player.getOutposts())
+                .flatMap(List::stream)
+                .filter(c -> c.getDefinition().getFaction() == faction)
+                .filter(c -> c != card)
                 .count();
 
-        long countPlayed = player.getPlayedCards().stream()
-                .filter(c ->
-                        c.getDefinition().getFaction() == faction &&
-                                c != card
-                )
-                .count();
-
-        return countPlayed + countHand >= required;
+        return count >= required;
     }
 
     private void draw(PlayerState player, int count) {

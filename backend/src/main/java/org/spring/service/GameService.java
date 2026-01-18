@@ -1,5 +1,6 @@
 package org.spring.service;
 
+import org.spring.dto.AttackRequest;
 import org.spring.dto.GameState;
 import org.spring.dto.Room;
 
@@ -36,7 +37,7 @@ public interface GameService {
      * @param gs объект {@link GameState} комнаты
      * @param playerId ID игрока
      */
-    void attack(GameState gs, String playerId);
+    void attack(GameState gs, String playerId, AttackRequest req);
 
     /**
      * Завершает ход игрока и передаёт ход следующему.
@@ -44,6 +45,8 @@ public interface GameService {
      * @param playerId ID игрока
      */
     void endTurn(GameState gs, String playerId);
+
+    void scrapStructure(GameState gs, String playerId, String cardId);
 
     /**
      * Находит игровую комнату по её ID.

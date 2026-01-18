@@ -1,13 +1,16 @@
 package org.spring.dto;
+import java.util.List;
 
 public record PlayerView(
         String playerId,
-        int health,
-        int handSize,
-        int playedSize,
-        int discardSize,
-        int deckSize,
         int currentAttack,
         int currentGold,
+        int health,
+        int deckSize,
+        int discardSize,
+        int handSize,
+        List<CardInstance> playedCards,
+        List<CardInstance> bases,
+        List<CardInstance> outposts,
         boolean active
 ) {}
