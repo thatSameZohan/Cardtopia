@@ -4,8 +4,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.spring.dto.*;
 import org.spring.enums.CardType;
+import org.spring.enums.Faction;
 import org.spring.enums.GameStatus;
 import org.spring.exc.GameCommonException;
+import org.spring.mapper.CardMapper;
 import org.spring.service.GameService;
 import org.spring.util.CardDefinitionUtil;
 import org.springframework.stereotype.Service;
@@ -14,6 +16,8 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static org.spring.enums.CardType.SHIP;
 
 /**
  * Сервис управления игровой логикой.
@@ -31,6 +35,7 @@ import java.util.stream.Stream;
 public class GameServiceImpl implements GameService {
 
     private final EffectServiceImpl effectService;
+    private final CardMapper cardMapper;
 
     /** Хранилище активных игр */
     private final Map<String, GameState> games = new ConcurrentHashMap<>();
@@ -54,35 +59,68 @@ public class GameServiceImpl implements GameService {
     }
 
     @Override
-    public void playCard(GameState gs, String playerId, String cardId, boolean scrap) {
+    public void playCard(GameState gs, String playerId, PlayCardRequest req) {
 
         PlayerState player = getPlayerOrThrow(gs, playerId);
 
+        ensureNotAwaitingDiscard(player);
+
+        if (!gs.isPlayersTurn(playerId)) {
+            throw new GameCommonException("NOT_YOUR_TURN", "Не ваш ход");
+        }
+
         CardInstance card = player.getHand().stream()
-                .filter(c -> c.getId().equals(cardId))
+                .filter(c -> c.getId().equals(req.cardId()))
                 .findFirst()
                 .orElseThrow(() -> new GameCommonException("CARD_NOT_IN_HAND", "Такой карты нет в руке"));
+
+        // Выбор фракции для карты Наемник
+        if (card.getCode().equals("CORE_MERCENARY")) {
+
+            if (req.faction() == null || req.faction() == Faction.NEUTRAL) {
+                throw new GameCommonException("FACTION_REQUIRED", "Для этой карты необходимо выбрать фракцию");
+            }
+
+            card.setFaction(req.faction());
+        }
 
         // Применяем способности карты
         effectService.applyPlayEffects(card,player,gs);
 
         // Применяем эффекты сброса карты
-        if (scrap) {
+        if (req.scrap()) {
             effectService.applyScrapEffects(card,player,gs);
-            log.info("Игрок {} сбрасывает в утиль карту {}", playerId, card.getDefinition().getName());
+            log.info("Игрок {} удалил из игры карту {}", playerId, card.getName());
         } else {
             // Перемещаем карту в сыгранные
             player.getPlayedCards().add(card);
         }
+
+        if (card.getType() == CardType.BASE) {
+            player.getBases().add(card);
+            player.getPlayedCards().remove(card);
+        }
+
+        if (card.getType() == CardType.OUTPOST) {
+            player.getOutposts().add(card);
+            player.getPlayedCards().remove(card);
+        }
         player.getHand().remove(card);
 
-        log.info("Игрок {} сыграл карту {}. Золото: {}, Атака: {}", playerId, card.getDefinition().getName(), player.getCurrentGold(), player.getCurrentAttack());
+        log.info("Игрок {} сыграл карту {}. Золото: {}, Атака: {}", playerId, card.getName(), player.getCurrentGold(), player.getCurrentAttack());
     }
 
     @Override
-    public void buyCard(GameState gs, String playerId, String cardId) {
+    public void buyCard(GameState gs, String playerId, String cardId, boolean topDeck) {
 
         PlayerState player = getPlayerOrThrow(gs, playerId);
+
+        if (!gs.isPlayersTurn(playerId)) {
+            throw new GameCommonException("NOT_YOUR_TURN", "Не ваш ход");
+        }
+
+        ensureNotAwaitingDiscard(player);
+
         CardInstance card;
 
         // 1. Пытаемся купить из рынка
@@ -92,7 +130,7 @@ public class GameServiceImpl implements GameService {
 
         if (marketCard.isPresent()) {
             card = marketCard.get();
-            buyFromMarket(gs, player, card);
+            buyFromMarket(gs, player, card, topDeck);
             return;
         }
 
@@ -103,7 +141,7 @@ public class GameServiceImpl implements GameService {
 
         if (explorerCard.isPresent()) {
             card = explorerCard.get();
-            buyFromExplorer(gs, player, card);
+            buyFromExplorer(gs, player, card, topDeck);
             return;
         }
 
@@ -114,6 +152,12 @@ public class GameServiceImpl implements GameService {
     public void attack(GameState gs, String playerId, AttackRequest req) {
 
         PlayerState attacker = getPlayerOrThrow(gs, playerId);
+
+        if (!gs.isPlayersTurn(playerId)) {
+            throw new GameCommonException("NOT_YOUR_TURN", "Не ваш ход");
+        }
+
+        ensureNotAwaitingDiscard(attacker);
 
         if (!attacker.getHand().isEmpty()) {
             throw new GameCommonException("HAND_NOT_EMPTY", "Разыграйте все карты в руке");
@@ -129,17 +173,17 @@ public class GameServiceImpl implements GameService {
         int attack = attacker.getCurrentAttack();
 
         // 1 Есть аванпосты — атакуем их
-        if (!opponent.getOutposts().isEmpty()) {
+        if (!opponent.getOutposts().isEmpty() || !attacker.getOutposts().isEmpty()) {
             if (!"OUTPOST".equals(req.targetType())) {
                 throw new GameCommonException("OUTPOST_FIRST", "Сначала нужно уничтожить аванпост");
             }
-            attackStructure(attacker, opponent.getOutposts(), req.targetId());
+            attackStructure(attacker, opponent, opponent.getOutposts(), req.targetId());
             return;
         }
 
         // 2️ База (по желанию)
         if ("BASE".equals(req.targetType())) {
-            attackStructure(attacker, opponent.getBases(), req.targetId());
+            attackStructure(attacker, opponent, opponent.getBases(), req.targetId());
             return;
         }
 
@@ -158,18 +202,37 @@ public class GameServiceImpl implements GameService {
 
     @Override
     public void endTurn(GameState gs, String playerId) {
+
         PlayerState player = getPlayerOrThrow(gs, playerId);
 
+        if (!gs.isPlayersTurn(playerId)) {
+            throw new GameCommonException("NOT_YOUR_TURN", "Не ваш ход");
+        }
+
+        ensureNotAwaitingDiscard(player);
+
         if (!player.getHand().isEmpty()) {
-            throw new GameCommonException("HAND_NOT_EMPTY", "Рука не пуста");
+            throw new GameCommonException("HAND_NOT_EMPTY", "Разыграйте все карты в руке");
         }
 
 //        if (player.getCurrentAttack() != 0){
 //            throw new GameCommonException("MAKE_ATTACK", "Сначала совершите атаку");
 //        }
 
+        if (player.getBuyFreeTopDeck() > 0 && !gs.getMarket().isEmpty()) {
+            throw new GameCommonException("REQUIRED_FREE_BUY", "Сначала совершите бесплатную покупку");
+        }
+
         player.setCurrentGold(0);
         player.setCurrentAttack(0);
+        player.setRightExile(0);
+        player.setDestroyBase(0);
+        player.setTopDeckNextShip(0);
+
+        player.getPlayedCards().stream()
+                .filter(c -> c.getCode().equals("CORE_MERCENARY"))
+                .forEach(c -> c.setFaction(Faction.NEUTRAL));
+
         player.getDiscardPile().addAll(player.getPlayedCards());
         player.getPlayedCards().clear();
 
@@ -186,21 +249,6 @@ public class GameServiceImpl implements GameService {
         if (nextPlayer.getHand().isEmpty()) {
 
             drawCardsToHand(nextPlayer, 5);
-
-            Iterator<CardInstance> iterator = nextPlayer.getHand().iterator();
-
-            while (iterator.hasNext()) {
-                CardInstance card = iterator.next();
-                CardType type = card.getDefinition().getType();
-
-                if (type == CardType.BASE) {
-                    nextPlayer.getBases().add(card);
-                    iterator.remove();
-                } else if (type == CardType.OUTPOST) {
-                    nextPlayer.getOutposts().add(card);
-                    iterator.remove();
-                }
-            }
         }
 
         activateStructures(nextPlayer, gs);
@@ -210,7 +258,14 @@ public class GameServiceImpl implements GameService {
 
     @Override
     public void scrapStructure(GameState gs, String playerId, String cardId) {
+
         PlayerState player = getPlayerOrThrow(gs, playerId);
+
+        if (!gs.isPlayersTurn(playerId)) {
+            throw new GameCommonException("NOT_YOUR_TURN", "Не ваш ход");
+        }
+
+        ensureNotAwaitingDiscard(player);
 
         CardInstance card = Stream.concat(
                         player.getBases().stream(),
@@ -225,6 +280,143 @@ public class GameServiceImpl implements GameService {
         player.getBases().remove(card);
         player.getOutposts().remove(card);
         player.getDiscardPile().add(card);
+    }
+
+    @Override
+    public void exileCard(GameState gs, String playerId, String cardId, String cardCode) {
+
+        PlayerState player = getPlayerOrThrow(gs, playerId);
+
+        if (!gs.isPlayersTurn(playerId)) {
+            throw new GameCommonException("NOT_YOUR_TURN", "Не ваш ход");
+        }
+
+        ensureNotAwaitingDiscard(player);
+
+        if (player.getRightExile() <= 0) {
+            throw new GameCommonException("NO_EXILE_RIGHT", "У вас нет права удалить карту");
+        }
+
+        CardInstance card;
+
+        // КОСТЫЛЬ если носорог или улитка, удаляем из рынка
+        if (cardCode.equals("CORE_RHINO") || cardCode.equals("CORE_SNAIL")) {
+            card = gs.getMarket().stream()
+                    .filter(c -> c.getId().equals(cardId))
+                    .findFirst()
+                    .orElseThrow(() -> new GameCommonException("CARD_NOT_FOUND", "Карта не найдена на рынке"));
+            gs.getMarket().remove(card);
+        // в остальных случаях удаляем из руки или сброса
+        } else {
+            card = Stream.of(player.getHand(), player.getDiscardPile())
+                    .flatMap(List::stream)
+                    .filter(c -> c.getId().equals(cardId))
+                    .findFirst()
+                    .orElseThrow(() -> new GameCommonException("CARD_NOT_FOUND", "Карта не найдена в руке или сбросе игрока"));
+            player.getHand().remove(card);
+            player.getDiscardPile().remove(card);
+        }
+        player.setRightExile(player.getRightExile() - 1);
+        log.info("Игрок {} удалил из игры карту {}", playerId, card.getName());
+    }
+
+    public void forceDiscard(GameState gs,String playerId, String cardId) {
+
+        PlayerState player = getPlayerOrThrow(gs, playerId);
+
+        if (player.getForcedDiscard() <= 0){
+            throw new GameCommonException("FORCED_DISCARD_EMPTY", "Принудительный сброс не нужен");
+        }
+
+        CardInstance card = player.getHand().stream()
+                .filter(c -> c.getId().equals(cardId))
+                .findFirst()
+                .orElseThrow(() -> new GameCommonException("CARD_NOT_IN_HAND", "Карта не найдена в руке"));
+
+        player.getHand().remove(card);
+        player.getPlayedCards().add(card);
+
+        if (player.getForcedDiscard() > 0) {
+            player.setForcedDiscard(player.getForcedDiscard() - 1);
+        } else {
+            player.setForcedDiscard(0);
+        }
+
+        log.info("Игрок {} принудительно сбросил карту {}", playerId, card.getName());
+    }
+
+    @Override
+    public void destroyBase(GameState gs, String playerId, String baseId) {
+
+        PlayerState attacker = getPlayerOrThrow(gs, playerId);
+
+        if (!gs.isPlayersTurn(playerId)) {
+            throw new GameCommonException("NOT_YOUR_TURN", "Не ваш ход");
+        }
+
+        if (attacker.getDestroyBase() <= 0) {
+            throw new GameCommonException("NO_DESTROY_RIGHT", "Нет права разрушить базу");
+        }
+
+        String opponentId = gs.getPlayers().keySet().stream()
+                .filter(id -> !id.equals(playerId))
+                .findFirst()
+                .orElseThrow(() ->
+                        new GameCommonException("OPPONENT_NOT_FOUND", "Оппонент не найден")
+                );
+
+        PlayerState opponent = gs.getPlayers().get(opponentId);
+
+        CardInstance base = opponent.getBases().stream()
+                .filter(c -> c.getId().equals(baseId))
+                .findFirst()
+                .orElseThrow(() -> new GameCommonException("BASE_NOT_FOUND", "База не найдена"));
+
+        opponent.getBases().remove(base);
+        opponent.getDiscardPile().add(base);
+
+        attacker.setDestroyBase(attacker.getDestroyBase() - 1);
+
+        log.info("Игрок {} разрушил базу {} игрока {}", playerId, base.getName(), opponentId);
+    }
+
+    @Override
+    public void buyFreeTopDeck(GameState gs, String playerId, String cardId) {
+
+        PlayerState player = getPlayerOrThrow(gs, playerId);
+
+        if (!gs.isPlayersTurn(playerId)) {
+            throw new GameCommonException("NOT_YOUR_TURN", "Не ваш ход");
+        }
+
+        if (player.getBuyFreeTopDeck() <= 0) {
+            throw new GameCommonException("NO_FREE_SHIP_BUY", "Нет права на бесплатную покупку корабля");
+        }
+
+        CardInstance card = gs.getMarket().stream()
+                .filter(c -> c.getId().equals(cardId))
+                .findFirst()
+                .orElseThrow(() -> new GameCommonException("CARD_NOT_IN_MARKET", "Карты нет в рынке"));
+
+        if (card.getType() != CardType.SHIP) {
+            throw new GameCommonException("NOT_A_SHIP", "Можно купить только корабль");
+        }
+
+        // бесплатно → золото не трогаем
+        gs.getMarket().remove(card);
+
+        // кладём на верх колоды
+        player.getDeck().addFirst(card);
+
+        // пополняем рынок
+        if (!gs.getMarketDeck().isEmpty()) {
+            gs.getMarket().add(gs.getMarketDeck().removeFirst());
+        }
+
+        // уменьшаем счётчик
+        player.setBuyFreeTopDeck(player.getBuyFreeTopDeck() - 1);
+
+        log.info("Игрок {} бесплатно купил корабль {} и положил на верх колоды", playerId, card.getName());
     }
 
 
@@ -258,9 +450,9 @@ public class GameServiceImpl implements GameService {
         for (PlayerState player : gs.getPlayers().values()) {
             List<CardInstance> deck = new ArrayList<>();
             for (int i = 0; i < scout.getCopies() / playersCount; i++)
-                deck.add(new CardInstance(scout));
+                deck.add(cardMapper.toInstance(scout));
             for (int i = 0; i < viper.getCopies() / playersCount; i++)
-                deck.add(new CardInstance(viper));
+                deck.add(cardMapper.toInstance(viper));
             Collections.shuffle(deck);
             player.setDeck(deck);
         }
@@ -302,7 +494,7 @@ public class GameServiceImpl implements GameService {
     private List<CardInstance> expand (CardDefinition definition) {
         List<CardInstance> result = new ArrayList<>();
         for (int i = 0; i < definition.getCopies(); i++) {
-            result.add(new CardInstance(definition));
+            result.add(cardMapper.toInstance(definition));
         }
         return result;
     }
@@ -316,16 +508,29 @@ public class GameServiceImpl implements GameService {
         return player;
     }
 
-    private void buyFromMarket(GameState gs, PlayerState player, CardInstance card) {
+    private void buyFromMarket(GameState gs, PlayerState player, CardInstance card, boolean topDeck) {
 
-        int cost = card.getDefinition().getCost();
+        int cost = card.getCost();
 
         if (player.getCurrentGold() < cost) {
             throw new GameCommonException("NOT_ENOUGH_GOLD", "Недостаточно золота");
         }
 
+        if (topDeck && player.getTopDeckNextShip() <= 0) {
+            throw new GameCommonException("NOT_ENOUGH_TOP_DECK", "Нет прав положить карту наверх колоды");
+        }
+
         player.setCurrentGold(player.getCurrentGold() - cost);
-        player.getDiscardPile().add(card);
+
+        if (player.getTopDeckNextShip() > 0 && topDeck && card.getType() == SHIP){
+            player.getDeck().addFirst(card);
+            player.setTopDeckNextShip(player.getTopDeckNextShip() - 1);
+
+            log.info("Купленная карта {} положена на верх колоды", card.getName());
+        } else {
+            player.getDiscardPile().add(card);
+            log.info("Купленная карта {} положена в стопку сброса", card.getName());
+        }
 
         gs.getMarket().remove(card);
 
@@ -334,23 +539,34 @@ public class GameServiceImpl implements GameService {
             gs.getMarket().add(gs.getMarketDeck().removeFirst());
         }
 
-        log.info("Игрок {} купил карту {} из рынка", player.getPlayerId(), card.getDefinition().getName());
+        log.info("Игрок {} купил карту {} из рынка", player.getPlayerId(), card.getName());
     }
 
-    private void buyFromExplorer(GameState gs, PlayerState player, CardInstance card) {
+    private void buyFromExplorer(GameState gs, PlayerState player, CardInstance card, boolean topDeck) {
 
-        int cost = card.getDefinition().getCost();
+        int cost = card.getCost();
 
         if (player.getCurrentGold() < cost) {
             throw new GameCommonException("NOT_ENOUGH_GOLD", "Недостаточно золота");
         }
 
+        if (topDeck && player.getTopDeckNextShip() <= 0) {
+            throw new GameCommonException("NOT_ENOUGH_TOP_DECK", "Нет прав положить карту наверх колоды");
+        }
+
         player.setCurrentGold(player.getCurrentGold() - cost);
-        player.getDiscardPile().add(card);
 
-        gs.getExplorerPile().remove(card);
+        if (player.getTopDeckNextShip() > 0 && topDeck && card.getType() == SHIP){
+            player.getDeck().addFirst(card);
+            player.setTopDeckNextShip(player.getTopDeckNextShip() - 1);
 
-        log.info("Игрок {} купил карту Explorer {}", player.getPlayerId(), card.getDefinition().getName());
+            log.info("Купленная карта {} положена на верх колоды", card.getName());
+        } else {
+            gs.getExplorerPile().remove(card);
+            log.info("Купленная карта {} положена в стопку сброса", card.getName());
+        }
+
+        log.info("Игрок {} купил карту Explorer {}", player.getPlayerId(), card.getName());
     }
 
     private void activateStructures(PlayerState player, GameState gs) {
@@ -363,6 +579,7 @@ public class GameServiceImpl implements GameService {
     }
 
     private void attackStructure(PlayerState attacker,
+                                 PlayerState opponent,
                                  List<CardInstance> structures,
                                  String targetId) {
 
@@ -371,19 +588,20 @@ public class GameServiceImpl implements GameService {
                 .findFirst()
                 .orElseThrow(() -> new GameCommonException("TARGET_NOT_FOUND", "Цель не найдена"));
 
-        int defense = target.getDefinition().getDefense();
+        int defense = target.getDefense();
 
         if (attacker.getCurrentAttack() < defense) {
-            attacker.setCurrentAttack(0);
-            return;
+            throw new GameCommonException("LOW_ATTACK","Недостаточно атаки");
         }
 
         attacker.setCurrentAttack(attacker.getCurrentAttack() - defense);
         structures.remove(target);
-        attacker.getDiscardPile().add(target);
+        opponent.getDiscardPile().add(target);
     }
 
-
-
-
+    private void ensureNotAwaitingDiscard (PlayerState player) {
+        if (player.getForcedDiscard() != 0 && !player.getHand().isEmpty()) {
+            throw new GameCommonException("FORCED_DISCARD_REQUIRED", "Вы должны сбросить карту");
+        }
+    }
 }

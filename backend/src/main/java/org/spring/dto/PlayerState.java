@@ -17,6 +17,11 @@ public class PlayerState {
     private int currentAttack = 0;
     private int currentGold = 0;
     private int health = 20;
+    private int forcedDiscard = 0;// количество карт для принудительного сброса в сыгранные
+    private int rightExile = 0;// количество карт которые можно удалить из руки или сброса игрока
+    private int destroyBase = 0; //количество баз противника которые может уничтожить игрок
+    private int topDeckNextShip = 0; // сколько следующих купленных кораблей можно положить на верх колоды
+    private int buyFreeTopDeck = 0; // Сколько бесплатных кораблей можно купить и положить на верх колоды
     private List<CardInstance> deck = new LinkedList<>(); // колода игрока
     private List<CardInstance> discardPile = new ArrayList<>(); // стопка сброса
     private List<CardInstance> hand = new ArrayList<>(); // рука
