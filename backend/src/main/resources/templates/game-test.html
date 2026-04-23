@@ -94,11 +94,10 @@
         return `
     <div class="card">
         <b>${c.name}</b>
-
+        | <b>СТОИМОСТЬ: ${c.cost ?? "-"}</b>
         <div class="effect">
-            type: ${c.type}
-            | faction: ${c.faction}
-            | <b>cost: ${c.cost ?? "-"}</b>
+            <b>ТИП: ${c.type}</b>
+            <b>| ФРАКЦИЯ: ${c.cardFaction}</b>
             ${c.defense > 0 ? `| defense: ${c.defense}` : ""}
         </div>
 
@@ -125,7 +124,7 @@
     <div class="card">
         <b>${c.name}</b>
         <div class="effect">
-            type:${c.type} faction:${c.faction} defense:${c.defense}
+            type:${c.type} cardFaction:${c.cardFaction} defense:${c.defense}
         </div>
 
         ${c.mainEffects ? `<div class="effect">${renderSetEffects("Main", c.mainEffects)}</div>` : ""}
@@ -174,11 +173,11 @@
             ХП:${p.health}
             АТАКА:${p.currentAttack}
             ЗОЛОТО:${p.currentGold} <br>
-            FD:${p.forcedDiscard}
+            FORSE_DISCARD:${p.forcedDiscard}
             R.EXILE:${p.rightExile}
-            R.DB:${p.destroyBase}
-            R.TD:${p.topDeckNextShip}
-            R.FREE.TD:${p.buyFreeTopDeck}
+            R.DESTROY_BASE:${p.destroyBase}
+            R.TOP_DECK:${p.topDeckNextShip}
+            R.FREE.TOP_DECK:${p.buyFreeTopDeck}
 
             <div>
                 <b>Bases</b>
@@ -214,8 +213,8 @@
         ` : "";
 
             const factionSelect = c.code === "CORE_MERCENARY" ? `
-            <select id="faction-${c.id}">
-                <option value="">-- faction --</option>
+            <select id="cardFaction-${c.id}">
+                <option value="">-- cardFaction --</option>
                 <option value="BLOB">BLOB</option>
                 <option value="MACHINE_CULT">MACHINE_CULT</option>
                 <option value="STAR_EMPIRE">STAR_EMPIRE</option>
@@ -279,7 +278,7 @@
     /* ===== ACTIONS ===== */
 
     function play(cardId) {
-        const factionSelect = document.getElementById("faction-" + cardId);
+        const factionSelect = document.getElementById("cardFaction-" + cardId);
         const scrapCheckbox = document.getElementById("scrap-" + cardId);
 
         client.publish({
@@ -288,7 +287,7 @@
                 gameId,
                 cardId,
                 scrap: scrapCheckbox ? scrapCheckbox.checked : false,
-                faction: factionSelect ? factionSelect.value || null : null
+                cardFaction: factionSelect ? factionSelect.value || null : null
             })
         });
     }

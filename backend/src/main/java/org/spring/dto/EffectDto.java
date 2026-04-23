@@ -4,7 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.spring.enums.EffectType;
+import org.spring.domain.effect.EffectType;
 
 @NoArgsConstructor
 @AllArgsConstructor

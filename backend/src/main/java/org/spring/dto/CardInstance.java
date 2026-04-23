@@ -4,24 +4,25 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.spring.enums.CardType;
-import org.spring.enums.Faction;
+import org.spring.domain.card.CardCode;
+import org.spring.domain.card.CardType;
+import org.spring.domain.card.CardFaction;
 
-import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter @Setter
 public class CardInstance {
 
-    private final String id = UUID.randomUUID().toString().substring(0, 8);
-    private String code;
+    private String id;
+    private CardCode code;
     private String name;
     private CardType type;
-    private Faction faction;
+    private CardFaction cardFaction;
     private int cost;
     private int defense;
 
     private SetEffects mainEffects;
     private SetEffects factionEffectsLvl1;
     private SetEffects scrapEffects;
+
 }

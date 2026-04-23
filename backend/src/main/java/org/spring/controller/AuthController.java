@@ -11,12 +11,9 @@ import org.spring.dto.AuthResponse;
 import org.spring.dto.ErrorDto;
 import org.spring.dto.LoginRequest;
 import org.spring.dto.RegisterRequest;
-import org.spring.service.AuthService;
+import org.spring.application.AuthService;
 import org.springframework.http.*;
-import org.springframework.security.authentication.*;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.*;
 
 @RequiredArgsConstructor
 @RestController

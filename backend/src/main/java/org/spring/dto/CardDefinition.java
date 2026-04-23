@@ -1,19 +1,20 @@
 package org.spring.dto;
 
 import lombok.*;
-import org.spring.enums.CardType;
-import org.spring.enums.Faction;
+import org.spring.domain.card.CardCode;
+import org.spring.domain.card.CardType;
+import org.spring.domain.card.CardFaction;
 
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter @Setter
 public class CardDefinition {
 
-    private String code;
+    private CardCode code;
     private int copies;
     private String name;
     private CardType type;
-    private Faction faction;
+    private CardFaction cardFaction;
     private int cost;
     private int defense;
 

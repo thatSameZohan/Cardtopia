@@ -3,7 +3,8 @@ package org.spring.dto;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
-import org.spring.enums.GameStatus;
+import org.spring.domain.game.GameStatus;
+import org.spring.exc.GameCommonException;
 
 import java.util.*;
 
@@ -21,13 +22,35 @@ public class GameState {
     private String winnerId;
     private List<CardInstance> explorerPile = new ArrayList<>();
 
-    public GameState(String id) {
-        this.id = id;
+    public GameState() {
+        this.id = UUID.randomUUID().toString().substring(0, 8);
         this.status = GameStatus.WAITING_FOR_PLAYER;
     }
 
     public boolean isPlayersTurn(String playerId) {
         return playerId.equals(activePlayerId);
     }
+
+    public PlayerState getPlayer(String playerId) {
+
+        PlayerState player = players.get(playerId);
+
+        if (player == null) {
+            throw new GameCommonException("PLAYER_NOT_FOUND", "Игрок не найден");
+        }
+
+        return player;
+    }
+
+    public PlayerState getOpponent(String playerId) {
+        return players.values().stream()
+                .filter(p -> !p.getPlayerId().equals(playerId))
+                .findFirst()
+                .orElseThrow(() ->
+                        new GameCommonException("OPPONENT_NOT_FOUND", "Оппонент не найден"));
+    }
+
+
+
 }
 

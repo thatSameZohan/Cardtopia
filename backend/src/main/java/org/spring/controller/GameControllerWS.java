@@ -6,8 +6,8 @@ import org.spring.dto.*;
 import org.spring.exc.GameCommonException;
 import org.spring.exc.RoomCommonException;
 import org.spring.mapper.ViewMapper;
-import org.spring.service.GameService;
-import org.spring.service.RoomService;
+import org.spring.application.GameService;
+import org.spring.application.RoomService;
 import org.springframework.messaging.handler.annotation.MessageExceptionHandler;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
@@ -74,7 +74,7 @@ public class GameControllerWS {
         GameState gs = validateAndGetGame(req.gameId(), principal);
 
         synchronized (lockFor(gs.getId())) {
-            gameService.buyCard(gs, principal.getName(), req.marketCardId(),req.topDeck());
+            gameService.buyCard(gs, principal.getName(), req.marketCardId(),req.type());
             broadcastState(gs);
         }
     }
@@ -145,18 +145,6 @@ public class GameControllerWS {
         }
     }
 
-    @MessageMapping("/game.buyFreeShip")
-    public void buyFreeShip(BuyCardRequest req, Principal principal) {
-
-        GameState gs = validateAndGetGame(req.gameId(), principal);
-
-        synchronized (lockFor(gs.getId())) {
-            gameService.buyFreeTopDeck(gs, principal.getName(), req.marketCardId());
-            broadcastState(gs);
-        }
-    }
-
-
     /* ========================= UTIL ========================= */
 
     private Object lockFor(String gameId) {
@@ -184,8 +172,7 @@ public class GameControllerWS {
 
     private GameState validateAndGetGame(String gameId, Principal principal) {
         requireAuth(principal);
-        return gameService.findGame(gameId)
-                .orElseThrow(() -> new GameCommonException("GAME_NOT_FOUND", "Игра не найдена"));
+        return gameService.findGame(gameId);
     }
 
     /* ========================= Exception Handling ========================= */
