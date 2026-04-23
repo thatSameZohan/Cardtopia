@@ -1,4 +1,5 @@
 package org.spring.dto;
 
-public record BuyCardRequest(String gameId, String marketCardId) {
-}
+import org.spring.domain.market.PurchaseType;
+
+public record BuyCardRequest(String gameId, String marketCardId, PurchaseType type) {}

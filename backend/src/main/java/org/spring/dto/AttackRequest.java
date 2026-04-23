@@ -1,4 +1,9 @@
 package org.spring.dto;
 
-public record AttackRequest(String gameId) {
-}
+import org.spring.domain.game.TargetType;
+
+public record AttackRequest(
+        String gameId,
+        TargetType targetType, // OUTPOST | BASE | PLAYER
+        String targetId    // null если PLAYER
+) {}

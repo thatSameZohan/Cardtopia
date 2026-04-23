@@ -6,8 +6,8 @@ import org.spring.dto.*;
 import org.spring.exc.GameCommonException;
 import org.spring.exc.RoomCommonException;
 import org.spring.mapper.ViewMapper;
-import org.spring.service.GameService;
-import org.spring.service.RoomService;
+import org.spring.application.GameService;
+import org.spring.application.RoomService;
 import org.springframework.messaging.handler.annotation.MessageExceptionHandler;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
@@ -63,10 +63,7 @@ public class GameControllerWS {
         GameState gs = validateAndGetGame(req.gameId(), principal);
 
         synchronized (lockFor(gs.getId())) {
-            if (!gs.isPlayersTurn(principal.getName())) {
-                throw new GameCommonException("NOT_YOUR_TURN", "Не ваш ход");
-            }
-            gameService.playCard(gs, principal.getName(), req.cardId());
+            gameService.playCard(gs, principal.getName(), req);
             broadcastState(gs);
         }
     }
@@ -77,14 +74,10 @@ public class GameControllerWS {
         GameState gs = validateAndGetGame(req.gameId(), principal);
 
         synchronized (lockFor(gs.getId())) {
-            if (!gs.isPlayersTurn(principal.getName())) {
-                throw new GameCommonException("NOT_YOUR_TURN", "Не ваш ход");
-            }
-            gameService.buyCard(gs, principal.getName(), req.marketCardId());
+            gameService.buyCard(gs, principal.getName(), req.marketCardId(),req.type());
             broadcastState(gs);
         }
     }
-
 
     @MessageMapping("/game.attack")
     public void attack(AttackRequest req, Principal principal) {
@@ -92,10 +85,7 @@ public class GameControllerWS {
         GameState gs = validateAndGetGame(req.gameId(), principal);
 
         synchronized (lockFor(gs.getId())) {
-            if (!gs.isPlayersTurn(principal.getName())) {
-                throw new GameCommonException("NOT_YOUR_TURN", "Не ваш ход");
-            }
-            gameService.attack(gs, principal.getName());
+            gameService.attack(gs, principal.getName(), req);
             broadcastState(gs);
         }
     }
@@ -106,10 +96,51 @@ public class GameControllerWS {
         GameState gs = validateAndGetGame(req.gameId(), principal);
 
         synchronized (lockFor(gs.getId())) {
-            if (!gs.isPlayersTurn(principal.getName())) {
-                throw new GameCommonException("NOT_YOUR_TURN", "Не ваш ход");
-            }
             gameService.endTurn(gs, principal.getName());
+            broadcastState(gs);
+        }
+    }
+
+    @MessageMapping("/game.scrapStructure")
+    public void scrapStructure(@Payload ScrapStructureRequest req, Principal principal) {
+
+        GameState gs = validateAndGetGame(req.gameId(), principal);
+
+        synchronized (lockFor(gs.getId())) {
+            gameService.scrapStructure(gs, principal.getName(), req.cardId());
+            broadcastState(gs);
+        }
+    }
+
+    @MessageMapping("/game.exileCard")
+    public void exileCard(@Payload ExileCardRequest req, Principal principal) {
+
+        GameState gs = validateAndGetGame(req.gameId(), principal);
+
+        synchronized (lockFor(gs.getId())) {
+            gameService.exileCard(gs, principal.getName(), req.cardId(),req.cardCode());
+            broadcastState(gs);
+        }
+    }
+
+    @MessageMapping("/game.forcedDiscard")
+    public void forcedDiscard(@Payload ForcedDiscardRequest req, Principal principal) {
+
+        GameState gs = validateAndGetGame(req.gameId(), principal);
+
+        synchronized (lockFor(gs.getId())) {
+            gameService.forceDiscard(gs, principal.getName(), req.cardId());
+            broadcastState(gs);
+        }
+    }
+
+    @MessageMapping("/game.destroyBase")
+    public void destroyBase(@Payload DestroyBaseRequest req, Principal principal) {
+
+        GameState gs = validateAndGetGame(req.gameId(), principal);
+
+        synchronized (lockFor(gs.getId())) {
+            gameService.destroyBase (gs, principal.getName(), req.BaseId());
             broadcastState(gs);
         }
     }
@@ -141,8 +172,7 @@ public class GameControllerWS {
 
     private GameState validateAndGetGame(String gameId, Principal principal) {
         requireAuth(principal);
-        return gameService.findGame(gameId)
-                .orElseThrow(() -> new GameCommonException("GAME_NOT_FOUND", "Игра не найдена"));
+        return gameService.findGame(gameId);
     }
 
     /* ========================= Exception Handling ========================= */

@@ -6,7 +6,7 @@ import org.spring.dto.ErrorResponse;
 import org.spring.dto.RoomRequest;
 import org.spring.dto.Room;
 import org.spring.exc.RoomCommonException;
-import org.spring.service.RoomService;
+import org.spring.application.RoomService;
 import org.springframework.messaging.handler.annotation.MessageExceptionHandler;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;

@@ -3,7 +3,8 @@ package org.spring.dto;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
-import org.spring.enums.GameStatus;
+import org.spring.domain.game.GameStatus;
+import org.spring.exc.GameCommonException;
 
 import java.util.*;
 
@@ -13,21 +14,43 @@ import java.util.*;
 public class GameState {
 
     private final String id;
-    private final Map<String, PlayerState> players = new LinkedHashMap<>();
+    private Map<String, PlayerState> players = new LinkedHashMap<>();
     private GameStatus status;
     private String activePlayerId;
-    private final Deque<CardDto> marketDeck = new ArrayDeque<>();
-    private final List<CardDto> market = new ArrayList<>(5);
+    private List<CardInstance> marketDeck = new LinkedList<>();
+    private List<CardInstance> market = new ArrayList<>(5);
     private String winnerId;
-    private Deque<CardDto> explorerPile = new ArrayDeque<>();
+    private List<CardInstance> explorerPile = new ArrayList<>();
 
-    public GameState(String id) {
-        this.id = id;
-        this.status = GameStatus.IN_PROGRESS;
+    public GameState() {
+        this.id = UUID.randomUUID().toString().substring(0, 8);
+        this.status = GameStatus.WAITING_FOR_PLAYER;
     }
 
     public boolean isPlayersTurn(String playerId) {
         return playerId.equals(activePlayerId);
     }
+
+    public PlayerState getPlayer(String playerId) {
+
+        PlayerState player = players.get(playerId);
+
+        if (player == null) {
+            throw new GameCommonException("PLAYER_NOT_FOUND", "Игрок не найден");
+        }
+
+        return player;
+    }
+
+    public PlayerState getOpponent(String playerId) {
+        return players.values().stream()
+                .filter(p -> !p.getPlayerId().equals(playerId))
+                .findFirst()
+                .orElseThrow(() ->
+                        new GameCommonException("OPPONENT_NOT_FOUND", "Оппонент не найден"));
+    }
+
+
+
 }
 
