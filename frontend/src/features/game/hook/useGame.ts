@@ -58,7 +58,10 @@ export const useGame = (gameId: string | null) => {
   /* ===== ACTIONS ===== */
 
   const playCard = (cardId: string) =>
-    publish('/app/game.playCard', JSON.stringify({ gameId, cardId }));
+    publish('/app/game.playCard', JSON.stringify({ gameId, cardId, }));
+
+  const scrapCard = (cardId: string) =>
+    publish('/app/game.scrapCard', JSON.stringify({ gameId, cardId }));
 
   const buyCard = (marketCardId: string) =>
     publish('/app/game.buyCard', JSON.stringify({ gameId, marketCardId }));
@@ -72,6 +75,7 @@ export const useGame = (gameId: string | null) => {
     player,
     gameState,
     playCard,
+    scrapCard,
     buyCard,
     attack,
     endTurn,

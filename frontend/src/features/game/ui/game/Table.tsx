@@ -1,11 +1,14 @@
 'use client';
-import React, { useState, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { Card } from './Card/Card';
 import { Market } from './Market';
-import { GameState, Player } from '../../type/type';
+import { CardType, GameState, Player } from '../../type/type';
 import styles from './Game.module.scss';
 import clsx from 'clsx';
 import { TableZone } from '../..';
+import { ShipCard } from './Card/ShipCard';
+import { BaseCard } from './Card/BaseCard';
+import { OutpostCard } from './Card/OutpostCard';
 
 type Props = {
   player: Player | null;
@@ -38,15 +41,18 @@ export const Table = ({
 
   const tableRef = useRef<{ clear: () => void }>(null);
 
-  const handlePlayCard = (
-    cardId: string,
-    cardCost: number,
-    cardAttack: number,
-  ) => {
-    setGold((prev) => prev + cardCost);
-    setAttack((prev) => prev + cardAttack);
+  const handlePlayCard = (card: CardType) => {
+    // ищем способность TRADE
+    const tradeAbility = card.abilities?.find((a) => a.type === 'TRADE');
+    const combatAbility = card.abilities?.find((a) => a.type === 'COMBAT');
 
-    onPlayCard(cardId); // вызывается корректно
+    const gainedGold = tradeAbility?.value ?? 0;
+    const gainedAttack = combatAbility?.value ?? 0;
+
+    setGold((prev) => prev + gainedGold); // прибавляем золото из TRADE
+    setAttack((prev) => prev + gainedAttack); // прибавляем атаку
+
+    onPlayCard(card.id);
   };
 
   const handleBuyCard = (cardId: string, cardCost: number) => {
@@ -77,7 +83,12 @@ export const Table = ({
         <h1 className={styles['opponent__title']}>❤ {opponent?.health}</h1>
         <div className={styles['opponent__card-container']}>
           {Array.from({ length: opponent?.handSize ?? 0 }).map((_, index) => (
-            <Card key={index} id={`opponent-card-${index}`} variant="back" />
+            <Card
+              key={index}
+              id={`opponent-card-${index}`}
+              variant="back"
+              type={'Ship'}
+            />
           ))}
         </div>
       </div>
@@ -95,12 +106,11 @@ export const Table = ({
       </div>
       <TableZone
         title="Стол"
-        accept="card"
-        onDrop={(card) =>
-          handlePlayCard(card.id, card.gold ?? 0, card.attack ?? 0)
-        }
+        accept="card" // DnD тип — любая строка
+        onDrop={(card) => handlePlayCard(card)}
         onClear={tableRef}
       />
+
       {/* <TableZone
         title="Рынок"
         accept="market"
@@ -112,16 +122,19 @@ export const Table = ({
         <h3 className={styles['me__title']}>{me?.playerId}</h3>
         <h1 className={styles['me__title']}>❤ {me?.health}</h1>
         <div className={styles['me__card-container']}>
-          {player?.hand.map((card) => (
-            <Card
-              type="card"
-              key={card.id}
-              id={card.id}
-              attack={card.attack}
-              cost={card.cost}
-              gold={card.gold}
-            />
-          ))}
+          {player?.hand.map((card) => {
+            switch (card.type) {
+              case 'Ship':
+                return <ShipCard key={card.id} {...card} />;
+              case 'Base':
+                return <BaseCard key={card.id} {...card} />;
+              case 'OUTPOST':
+                return <OutpostCard key={card.id} {...card} />;
+              default:
+                return null;
+            }
+          })}
+          ;
         </div>
       </div>
       {/* Кнопки */}

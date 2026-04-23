@@ -1,3 +1,6 @@
+DROP TABLE IF EXISTS abilities;
+DROP TABLE IF EXISTS core_set;
+
 CREATE TABLE core_set (
                           id BIGSERIAL PRIMARY KEY,
                           set_name VARCHAR(255) NOT NULL,

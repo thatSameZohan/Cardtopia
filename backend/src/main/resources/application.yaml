@@ -1,18 +1,49 @@
+# Common properties for all profiles
 spring:
-  datasource:
-    url: jdbc:postgresql://aws-1-eu-west-1.pooler.supabase.com:5432/postgres?sslmode=require
-    username: postgres.jfwbldocxafjzxhufaqm
-    password: postgres5784
-#    url: jdbc:postgresql://localhost:5432/cardtopia_db
-#    username: postgres
-#    password: 5784
-    driver-class-name: org.postgresql.Driver
-  jpa:
-    hibernate:
-      ddl-auto: none
+  profiles:
+    active: dev # Default profile
+
 jwt:
   secret: afafa876saf876saf876as8sf6s87as6f7fas6fas78f6
   access-ms: 1200000 #20 min
   refresh-ms: 6000000 #100 min
+
 server:
   port: 8080
+
+---
+# Development profile
+spring:
+  config:
+    activate:
+      on-profile: dev
+  datasource:
+    url: jdbc:postgresql://postgres:5432/cardtopia
+    username: user
+    password: password
+    driver-class-name: org.postgresql.Driver
+  sql:
+    init:
+      mode: always
+      data-locations: classpath:insert-tables.sql
+      schema-locations: classpath:create-tables.sql
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: update # Automatically update schema
+
+---
+# Production profile
+spring:
+  config:
+    activate:
+      on-profile: prod
+  datasource:
+    url: jdbc:postgresql://aws-1-eu-west-1.pooler.supabase.com:5432/postgres?sslmode=require
+    username: postgres.jfwbldocxafjzxhufaqm
+    password: postgres5784
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: none # Do not change schema in prod

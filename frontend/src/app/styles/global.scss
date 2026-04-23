@@ -1,9 +1,9 @@
 /* Переменные — первым делом */
-@import './variables.scss';
+@use './variables.scss' as *;
 
 /* Normalize — вторым (чтобы он не затёр переменные) */
-@import './normalize.css';
-@import './fonts.scss';
+@use './normalize.css' as *;
+@use './fonts.scss' as *;
 
 :root {
   --font-family: 'Roboto', sans-serif;

@@ -7,7 +7,7 @@ import { CardType } from '../../type/type';
 
 type TableZoneProps = {
   title: string;
-  accept: CardType['type']; // 'card' | 'market'
+  accept: string; // Любая строка для DnD, не CardTypeName
   onDrop: (card: CardType) => void;
   initialCards?: CardType[];
   onClear?: React.RefObject<{ clear: () => void } | null>;

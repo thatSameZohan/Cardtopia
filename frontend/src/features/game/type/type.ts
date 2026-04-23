@@ -32,17 +32,34 @@ export interface PlayerState {
 }
 type CardAbility = null; // временно
 
-export interface CardType {
-  id: string;
-  attack?: number;
-  gold?: number;
-  cost?: number;
-  type?: 'card' | 'market';
-  ability?: CardAbility | null;
-}
+// export interface CardType {
+//   id: string;
+//   attack?: number;
+//   gold?: number;
+//   cost?: number;
+//   type?: 'card' | 'market';
+//   ability?: CardAbility | null;
+// }
 
 export type MarketProps = {
   cards: CardType[];
   gold: number;
   onBuy: (cardId: string, cardCost: number) => void;
+};
+export type CardTypeName = 'Ship' | 'Base' | 'OUTPOST';
+
+export interface CardType {
+  id: string;
+  name?: string;
+  type: CardTypeName;
+  faction?: string;
+  defense?: number;
+  cost?: number;
+  abilities?: Ability[];
+}
+export type Ability = {
+  type: 'TRADE' | 'COMBAT' | 'ACQUIRE' | 'SCRAP';
+  value: number;
+  trigger?: string | null;
+  condition?: string | null;
 };

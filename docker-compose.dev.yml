@@ -1,34 +1,64 @@
+# docker-compose.dev.yml
+# Запуск: docker compose -f docker-compose.dev.yml up --build
+# или из папки frontend: npm run docker:dev
+
 services:
+  # Бэкенд сервис
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile.dev
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
     ports:
-      - '8080:8080'
-      - '5005:5005' # Для отладки
+      - '8080:8080' # Основной порт приложения
+      - '5005:5005' # Порт для удаленной отладки
     volumes:
-      - ./backend:/app
-      - /app/build
+      - ./backend:/app # Пробрасываем исходный код для hot-reload
+      - /app/build # Исключаем папку сборки, чтобы не перезатирать ее
     networks:
       - cardtopia-net
+    depends_on:
+      - postgres # Запускаем после postgres
 
+  # Фронтенд сервис
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile.dev
     ports:
-      - '3000:3000'
+      - '3000:3000' # Порт для Next.js
     environment:
-      - NEXT_PUBLIC_API_URL_SERVER=http://backend:8080
-      - NEXT_PUBLIC_API_URL=http://localhost:8080
+      - NEXT_PUBLIC_API_URL_SERVER=http://backend:8080 # URL для запросов на бэкенд со стороны сервера (внутри Docker)
+      - NEXT_PUBLIC_API_URL=http://localhost:8080 # URL для запросов на бэкенд со стороны клиента (в браузере)
     volumes:
-      - ./frontend:/app
-      - /app/node_modules
+      - ./frontend:/app # Пробрасываем исходный код для hot-reload
+      - /app/node_modules # Исключаем node_modules, чтобы использовать установленные в контейнере
     networks:
       - cardtopia-net
     depends_on:
-      - backend
+      - backend # Запускаем после backend
 
+  # Сервис базы данных PostgreSQL
+  postgres:
+    image: postgres:15 # Используем официальный образ Postgres 15
+    container_name: cardtopia-postgres-dev # Имя контейнера
+    environment:
+      POSTGRES_USER: user # Имя пользователя
+      POSTGRES_PASSWORD: password # Пароль
+      POSTGRES_DB: cardtopia # Имя базы данных
+    ports:
+      - '5433:5432' # Пробрасываем порт на хост (5433, чтобы не конфликтовать с локальным Postgres)
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data # Сохраняем данные БД между перезапусками
+    networks:
+      - cardtopia-net
+
+# Сеть для взаимодействия контейнеров
 networks:
   cardtopia-net:
     driver: bridge
+
+# Том для хранения данных БД
+volumes:
+  postgres_data_dev:
