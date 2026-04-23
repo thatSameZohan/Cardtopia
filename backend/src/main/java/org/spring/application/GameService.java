@@ -28,7 +28,7 @@ public interface GameService {
      * Игрок покупает карту из рынка.
      * @param gs           объект {@link GameState} комнаты
      * @param playerId     ID игрока
-     * @param marketCardId ID карты в рынке
+     * @param type тип покупки карты
      */
     void buyCard(GameState gs, String playerId, String cardId, PurchaseType type);
 

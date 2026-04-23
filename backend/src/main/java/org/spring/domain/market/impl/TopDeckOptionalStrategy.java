@@ -1,7 +1,6 @@
 package org.spring.domain.market.impl;
 
 import lombok.RequiredArgsConstructor;
-import org.spring.domain.card.CardType;
 import org.spring.domain.market.PurchaseStrategy;
 import org.spring.domain.market.PurchaseType;
 import org.spring.domain.validators.GameActionValidator;

@@ -3,8 +3,6 @@ package org.spring.domain.market;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.spring.domain.card.CardCode;
-import org.spring.domain.card.CardType;
-import org.spring.domain.validators.GameActionValidator;
 import org.spring.dto.CardInstance;
 import org.spring.dto.GameState;
 import org.spring.dto.PlayerState;
