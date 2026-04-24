@@ -43,6 +43,7 @@ public class GameInitializer {
         gs.setActivePlayerId(first);
 
         for (PlayerState player : gs.getPlayers().values()) {
+            player.setCurrentGold(100); // немного голды насыпал каждому для теста
             if (player.getPlayerId().equals(first)) {
                 deckService.draw(player, 3);
             } else {

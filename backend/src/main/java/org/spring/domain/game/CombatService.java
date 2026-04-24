@@ -36,7 +36,6 @@ public class CombatService {
 
         // 3️ Атака игрока
         opponent.setHealth(opponent.getHealth() - attack);
-        player.setCurrentAttack(0);
 
         log.info("Атака: игрок {} -> оппонент {}, здоровье оппонента {}", player.getPlayerId(), opponent.getPlayerId(), opponent.getHealth());
 

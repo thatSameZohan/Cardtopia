@@ -19,13 +19,13 @@ public class GameActionValidator {
 
     public void validatePlayerTurn(GameState gs, String playerId) {
         if (!gs.isPlayersTurn(playerId)) {
-            throw new GameCommonException("NOT_YOUR_TURN", "Не ваш ход");
+            throw new GameCommonException("NOT_YOUR_TURN", "Ход другого игрока");
         }
     }
 
     public void validateNeedForcedDiscard(PlayerState player) {
         if (player.getForcedDiscard() > 0) {
-            throw new GameCommonException("NEED_FORCED_DISCARD", "Вы должны сбросить карту");
+            throw new GameCommonException("NEED_FORCED_DISCARD", "Игрок должен сбросить карту");
         }
     }
 
@@ -37,18 +37,18 @@ public class GameActionValidator {
 
     public void validateEmptyHand(PlayerState player) {
         if (!player.getHand().isEmpty()) {
-            throw new GameCommonException("HAND_NOT_EMPTY", "Разыграйте все карты в руке");
+            throw new GameCommonException("HAND_NOT_EMPTY", "Игрок должен разыграть все карты в руке");
         }
     }
 
     public void validateMakeAttack(PlayerState player) {
         if (player.getCurrentAttack() != 0) {
-            throw new GameCommonException("MAKE_ATTACK", "Сначала совершите атаку");
+            throw new GameCommonException("MAKE_ATTACK", "Игрок должен совершить атаку");
         }
     }
     public void validateRequiredFreeBuy(PlayerState player, GameState gs) {
         if (player.getBuyFreeTopDeck() > 0 && !gs.getMarket().isEmpty()) {
-            throw new GameCommonException("REQUIRED_FREE_BUY", "Сначала совершите бесплатную покупку");
+            throw new GameCommonException("REQUIRED_FREE_BUY", "Игрок должен совершить бесплатную покупку");
         }
     }
     public void validateRightExile(PlayerState player) {

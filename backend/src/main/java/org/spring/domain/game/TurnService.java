@@ -5,7 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.spring.domain.card.CardCode;
 import org.spring.domain.card.CardFaction;
 import org.spring.domain.deck.DeckService;
-import org.spring.domain.effect.EffectEngine;
+import org.spring.domain.effect.EffectService;
 import org.spring.dto.GameState;
 import org.spring.dto.PlayerState;
 import org.springframework.stereotype.Component;
@@ -16,10 +16,10 @@ import org.springframework.stereotype.Component;
 public class TurnService {
 
     private final DeckService deckService;
-    private final EffectEngine  effectEngine;
+    private final EffectService effectService;
 
     public void endTurn(GameState gs, PlayerState player){
-        player.setCurrentGold(0);
+//        player.setCurrentGold(0);
         player.setCurrentAttack(0);
         player.setRightExile(0);
         player.setDestroyBase(0);
@@ -50,10 +50,10 @@ public class TurnService {
 
     private void activateStructures(PlayerState player, GameState gs) {
         player.getBases().forEach(c ->
-                effectEngine.applyPlayEffects(c, player, gs)
+                effectService.applyPlayEffects(c, player, gs)
         );
         player.getOutposts().forEach(c ->
-                effectEngine.applyPlayEffects(c, player, gs)
+                effectService.applyPlayEffects(c, player, gs)
         );
     }
 }
