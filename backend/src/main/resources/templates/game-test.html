@@ -2,44 +2,104 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Game Test</title>
+    <title>Cardtopia</title>
 
     <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7/bundles/stomp.umd.min.js"></script>
 
     <style>
-        body { font-family: Arial; padding: 20px }
-        .card { border: 1px solid #aaa; padding: 6px; margin: 6px }
-        .active { background: #e6ffe6 }
-        .effect { font-size: 12px; color: #444 }
-        .error { background:#ffe6e6;color:#900;padding:8px;margin-bottom:10px }
-        button { margin: 4px }
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+
+        .row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .card {
+            width: 180px;
+            height: 170px;
+            border: 1px solid #aaa;
+            border-radius: 10px;
+            padding: 8px;
+            box-sizing: border-box;
+            background: #ffffff;
+
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+
+            font-size: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .card-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+
+        .effect {
+            font-size: 11px;
+            color: #444;
+        }
+
+        .player {
+            width: 260px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            border-radius: 10px;
+            background: #fff;
+        }
+
+        .player.active {
+            background: #e6ffe6;
+            border: 2px solid #4CAF50;
+        }
+
+        button {
+            font-size: 11px;
+            padding: 3px 6px;
+            cursor: pointer;
+        }
+
+        .error {
+            background: #ffe6e6;
+            color: #900;
+            padding: 8px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+        }
     </style>
 </head>
 <body>
 
-<h2>Game Test</h2>
+<h2>Cardtopia</h2>
 
 <div id="errors"></div>
-<div id="status"></div>
+<div id="status"></div><br>
 
 <button onclick="attackPlayer()">Attack player</button>
 <button onclick="endTurn()">End turn</button>
 
 <h3>Players</h3>
-<div id="players"></div>
+<div id="players" class="row"></div>
 
 <h3>Your hand</h3>
-<div id="hand"></div>
+<div id="hand" class="row"></div>
 
 <h3>Played cards</h3>
-<div id="played"></div>
+<div id="played" class="row"></div>
 
 <h3>Market</h3>
-<div id="market"></div>
+<div id="market" class="row"></div>
 
 <h3>Explorers</h3>
-<div id="explorers"></div>
+<div id="explorers" class="row"></div>
 
 <script>
     const gameId = localStorage.getItem("gameId");
@@ -53,7 +113,6 @@
         connectHeaders: { Authorization: "Bearer " + token },
 
         onConnect: () => {
-
             client.subscribe("/topic/game." + gameId, m => {
                 gameView = JSON.parse(m.body);
                 render();
@@ -77,6 +136,8 @@
     });
     client.activate();
 
+    /* ================= RENDER ================= */
+
     function render() {
         if (!gameView) return;
 
@@ -85,38 +146,31 @@
 
         if (privateView) {
             renderHand();
-            renderPlayed();
         }
 
+        renderPlayed();
         renderMarket();
         renderExplorers();
     }
 
     /* ================= CARD ================= */
 
-    function cardView(c) {
+    function cardInner(c) {
         return `
-    <div class="card">
         <b>${c.name}</b> | cost: ${c.cost ?? "-"}
         <div class="effect">
             type:${c.type} | faction:${c.cardFaction}
             ${c.defense > 0 ? `| def:${c.defense}` : ""}
         </div>
-
         ${renderSetEffects("Main", c.mainEffects)}
         ${renderSetEffects("Faction", c.factionEffectsLvl1)}
         ${renderSetEffects("Scrap", c.scrapEffects)}
-    </div>`;
+    `;
     }
 
     function renderSetEffects(title, set) {
         if (!set || !set.effects?.length) return "";
-
-        return `
-    <div class="effect">
-        <b>${title}</b>:
-        ${set.effects.map(e => `${e.type}+${e.value}`).join(", ")}
-    </div>`;
+        return `<div class="effect"><b>${title}</b>: ${set.effects.map(e => `${e.type}+${e.value}`).join(", ")}</div>`;
     }
 
     /* ================= STATUS ================= */
@@ -135,27 +189,13 @@
 
         gameView.players.forEach(p => {
             div.innerHTML += `
-        <div class="${p.active ? "active" : ""}">
+        <div class="player ${p.active ? "active" : ""}">
             <b>${p.playerId}</b>
-            HP:${p.health}
-            ATK:${p.currentAttack}
-            GOLD:${p.currentGold} <br>
+            HP:${p.health} ATK:${p.currentAttack} GOLD:${p.currentGold}<br>
+            FD:${p.forcedDiscard} TOP:${p.topDeckNextShip} FREE:${p.buyFreeTopDeck}
 
-            FD:${p.forcedDiscard}
-            EX:${p.rightExile}
-            DESTROY:${p.destroyBase}
-            TOP:${p.topDeckNextShip}
-            FREE:${p.buyFreeTopDeck}
-
-            <div>
-                <b>Bases</b>
-                ${p.bases.map(b => structureView(b)).join("")}
-            </div>
-
-            <div>
-                <b>Outposts</b>
-                ${p.outposts.map(o => structureView(o)).join("")}
-            </div>
+            <div><b>Bases</b><div class="row">${p.bases.map(structureView).join("")}</div></div>
+            <div><b>Outposts</b><div class="row">${p.outposts.map(structureView).join("")}</div></div>
         </div>`;
         });
     }
@@ -165,19 +205,12 @@
     function structureView(c) {
         return `
     <div class="card">
-        <b>${cardView(c)}</b>
-
-        <button onclick="attackStructure('${c.id}','${c.type}')">
-            Attack
-        </button>
-
-        <button onclick="scrapStructure('${c.id}')">
-            Scrap
-        </button>
-
-        <button onclick="destroyBase('${c.id}')">
-            Destroy base
-        </button>
+        ${cardInner(c)}
+        <div class="card-actions">
+            <button onclick="attackStructure('${c.id}','${c.type}')">Attack</button>
+            <button onclick="scrapStructure('${c.id}')">Scrap</button>
+            <button onclick="destroyBase('${c.id}')">Destroy</button>
+        </div>
     </div>`;
     }
 
@@ -192,41 +225,29 @@
 
         privateView.hand.forEach(c => {
 
-            const hasScrap =
-                c.scrapEffects &&
-                c.scrapEffects.effects &&
-                c.scrapEffects.effects.length > 0;
-
-            const scrapCheckbox = hasScrap ? `
-            <label>
-                <input type="checkbox" id="scrap-${c.id}">
-                scrap
-            </label>
-        ` : "";
-
             const factionSelect = c.code === "CORE_MERCENARY" ? `
             <select id="cardFaction-${c.id}">
-                <option value="">-- cardFaction --</option>
+                <option value="">-- faction --</option>
                 <option value="BLOB">BLOB</option>
                 <option value="MACHINE_CULT">MACHINE_CULT</option>
                 <option value="STAR_EMPIRE">STAR_EMPIRE</option>
                 <option value="TRADE_FEDERATION">TRADE_FEDERATION</option>
-            </select>
-        ` : "";
+            </select>` : "";
 
-            const forcedDiscardBtn = me.forcedDiscard > 0
-                ? `<button onclick="forcedDiscard('${c.id}')">Forced discard</button>`
-                : "";
+            const forcedDiscardBtn = (me.forcedDiscard ?? 0) > 0
+                ? `<button onclick="forcedDiscard('${c.id}')">Discard</button>` : "";
 
             div.innerHTML += `
-            ${cardView(c)}
+        <div class="card">
+            ${cardInner(c)}
             ${factionSelect}
-            ${scrapCheckbox}
-            <br>
-            <button onclick="play('${c.id}')">Play</button>
-            <button onclick="exile('${c.id}','${c.code}')">Exile</button>
-            ${forcedDiscardBtn}
-        `;
+
+            <div class="card-actions">
+                <button onclick="play('${c.id}')">Play</button>
+                <button onclick="exile('${c.id}','${c.code}')">Exile</button>
+                ${forcedDiscardBtn}
+            </div>
+        </div>`;
         });
     }
 
@@ -236,13 +257,12 @@
         const div = document.getElementById("played");
         div.innerHTML = "";
 
-        const activePlayer = gameView.players.find(p => p.active);
-        if (!activePlayer) return;
+        gameView.players.forEach(p => {
+            if (!p.playedCards?.length) return;
 
-        div.innerHTML = `<h4>Played: ${activePlayer.playerId}</h4>`;
-
-        activePlayer.playedCards?.forEach(c => {
-            div.innerHTML += cardView(c);
+            p.playedCards.forEach(c => {
+                div.innerHTML += `<div class="card">${cardInner(c)}</div>`;
+            });
         });
     }
 
@@ -256,25 +276,15 @@
         if (!me) return;
 
         gameView.market.forEach(c => {
-
-            const buyBtn = `
-            <button onclick="buy('${c.id}', 'NORMAL')">Buy</button>
-        `;
-
-            const topDeckBtn = me.topDeckNextShip > 0 ? `
-            <button onclick="buy('${c.id}', 'TOP_DECK_OPTIONAL')">Top deck</button>
-        ` : "";
-
-            const freeTopBtn = me.buyFreeTopDeck > 0 ? `
-            <button onclick="buy('${c.id}', 'FREE_TOP_DECK_REQUIRED')">Free top</button>
-        ` : "";
-
             div.innerHTML += `
-            ${cardView(c)}
-            ${buyBtn}
-            ${topDeckBtn}
-            ${freeTopBtn}
-        `;
+        <div class="card">
+            ${cardInner(c)}
+            <div class="card-actions">
+                <button onclick="buy('${c.id}','NORMAL')">Buy</button>
+                ${me.topDeckNextShip > 0 ? `<button onclick="buy('${c.id}','TOP_DECK_OPTIONAL')">Top</button>` : ""}
+                ${me.buyFreeTopDeck > 0 ? `<button onclick="buy('${c.id}','FREE_TOP_DECK_REQUIRED')">Free</button>` : ""}
+            </div>
+        </div>`;
         });
     }
 
@@ -284,35 +294,28 @@
         const div = document.getElementById("explorers");
         div.innerHTML = "";
 
-        const me = gameView.players.find(p => p.playerId === privateView.playerId);
+        const me = getMe();
+        const c = gameView.explorerPile?.[0];
 
-        gameView.explorerPile.forEach(c => {
+        if (!c) return;
 
-            let buttons = `
+        div.innerHTML = `
+    <div class="card">
+        ${cardInner(c)}
+
+        <div class="card-actions">
             <button onclick="buy('${c.id}','NORMAL')">Buy</button>
-        `;
 
-            if (me?.topDeckNextShip > 0) {
-                buttons += `
-                <button onclick="buy('${c.id}','TOP_DECK_OPTIONAL')">
-                    Top Deck
-                </button>
-            `;
-            }
+            ${me?.topDeckNextShip > 0
+            ? `<button onclick="buy('${c.id}','TOP_DECK_OPTIONAL')">Top</button>`
+            : ""}
 
-            if (me?.buyFreeTopDeck > 0) {
-                buttons += `
-                <button onclick="buy('${c.id}','FREE_TOP_DECK_REQUIRED')">
-                    Free Top Deck
-                </button>
-            `;
-            }
-
-            div.innerHTML += `
-            ${cardView(c)}
-            ${buttons}
-        `;
-        });
+            ${me?.buyFreeTopDeck > 0
+            ? `<button onclick="buy('${c.id}','FREE_TOP_DECK_REQUIRED')">Free</button>`
+            : ""}
+        </div>
+    </div>
+    `;
     }
 
     /* ================= ACTIONS ================= */
@@ -325,7 +328,6 @@
             body: JSON.stringify({
                 gameId,
                 cardId,
-                scrap: document.getElementById("scrap-" + cardId)?.checked || false,
                 cardFaction: factionSelect ? factionSelect.value || null : null
             })
         });
@@ -334,11 +336,7 @@
     function buy(id, type) {
         client.publish({
             destination: "/app/game.buyCard",
-            body: JSON.stringify({
-                gameId,
-                marketCardId: id,
-                type: type
-            })
+            body: JSON.stringify({ gameId, marketCardId: id, type })
         });
     }
 
@@ -359,11 +357,7 @@
     function attackStructure(id, type) {
         client.publish({
             destination: "/app/game.attack",
-            body: JSON.stringify({
-                gameId,
-                targetType: type,
-                targetId: id
-            })
+            body: JSON.stringify({ gameId, targetType:type, targetId:id })
         });
     }
 
@@ -377,7 +371,7 @@
     function destroyBase(id) {
         client.publish({
             destination: "/app/game.destroyBase",
-            body: JSON.stringify({ gameId, BaseId:id })
+            body: JSON.stringify({ gameId, baseId:id })
         });
     }
 
@@ -388,20 +382,17 @@
         });
     }
 
+    function forcedDiscard(id) {
+        client.publish({
+            destination: "/app/game.forcedDiscard",
+            body: JSON.stringify({ gameId, cardId:id })
+        });
+    }
+
     function showError(text) {
         const d = document.getElementById("errors");
         d.innerHTML = `<div class="error">${text}</div>`;
         setTimeout(()=>d.innerHTML="",4000);
-    }
-
-    function forcedDiscard(id) {
-        client.publish({
-            destination: "/app/game.forcedDiscard",
-            body: JSON.stringify({
-                gameId,
-                cardId: id
-            })
-        });
     }
 
     function getMe() {
