@@ -15,6 +15,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
 import java.util.Set;
@@ -59,6 +60,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    @Transactional
     public AuthResponse refreshToken(String refreshTokenFromCookie, HttpServletResponse response) {
         if (refreshTokenFromCookie == null) {
             throw new AuthCommonException(401, "Refresh token не был передан");
@@ -72,7 +74,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         PersonEntity person = oldRt.getPerson();
-        refreshTokenService.deleteByPerson(person);
+        refreshTokenService.revokeToken(oldRt);
         RefreshToken newRt = refreshTokenService.createRefreshToken(person);
         CookieUtil.addRefreshTokenCookie(response, newRt.getToken());
 

@@ -1,33 +1,55 @@
+# docker-compose.yml
+# Запуск: docker compose up --build
+# или из папки frontend: npm run docker:prod
+
 services:
+  # Бэкенд сервис
   backend:
     build:
       context: ./backend
-      dockerfile: Dockerfile.dev
-    ports:
-      - '8080:8080'
-      - '5005:5005'
-    volumes:
-      - ./backend:/app
-      - /app/build
-    networks:
-      - cardtopia-net
-
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile.dev
-    ports:
-      - '3000:3000'
+      dockerfile: Dockerfile # Используем Dockerfile для продакшена
     environment:
-      - NEXT_PUBLIC_API_URL_SERVER=http://backend:8080
-      - NEXT_PUBLIC_API_URL=http://localhost:8080
-    volumes:
-      - ./frontend:/app
+      - SPRING_PROFILES_ACTIVE=prod
+    ports:
+      - '8080:8080' # Основной порт приложения
     networks:
       - cardtopia-net
     depends_on:
-      - backend
+      - postgres # Запускаем после postgres
 
+  # Фронтенд сервис
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile # Используем Dockerfile для продакшена
+    ports:
+      - '3000:3000' # Порт для Next.js
+    environment:
+      - NEXT_PUBLIC_API_URL_SERVER=http://backend:8080 # URL для запросов на бэкенд со стороны сервера (внутри Docker)
+      - NEXT_PUBLIC_API_URL=http://localhost:8080 # URL для запросов на бэкенд со стороны клиента (в браузере)
+    networks:
+      - cardtopia-net
+    depends_on:
+      - backend # Запускаем после backend
+
+  # Сервис базы данных PostgreSQL
+  postgres:
+    image: postgres:15 # Используем официальный образ Postgres 15
+    container_name: cardtopia-postgres-prod # Имя контейнера
+    environment:
+      POSTGRES_USER: user # Имя пользователя
+      POSTGRES_PASSWORD: password # Пароль
+      POSTGRES_DB: cardtopia # Имя базы данных
+    volumes:
+      - postgres_data_prod:/var/lib/postgresql/data # Сохраняем данные БД между перезапусками
+    networks:
+      - cardtopia-net
+
+# Сеть для взаимодействия контейнеров
 networks:
   cardtopia-net:
     driver: bridge
+
+# Том для хранения данных БД
+volumes:
+  postgres_data_prod:

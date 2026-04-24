@@ -18,8 +18,9 @@
     "commit": "cz",
     "prepare": "husky",
     "fsd": "steiger ./src",
-    "docker:up": "docker compose -f ../docker-compose.dev.yml up",
-    "docker:rebuild": "docker compose -f ../docker-compose.dev.yml up --build"
+    "docker:dev": "docker compose -f ../docker-compose.dev.yml up --build",
+    "docker:prod": "docker compose -f ../docker-compose.yml up --build",
+    "docker:rebuild": "docker compose -f ../docker-compose.dev.yml down -v && docker compose -f ../docker-compose.dev.yml build --no-cache && docker compose -f ../docker-compose.dev.yml up"
   },
   "dependencies": {
     "@ariakit/react": "^0.4.20",

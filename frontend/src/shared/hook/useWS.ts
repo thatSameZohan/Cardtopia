@@ -84,7 +84,12 @@ export const useWS = () => {
       callbacksRef.current = {};
       setConnected(false);
     };
-  }, [token, isInitialLoad, initClient]);
+    // Эффект намеренно не зависит от isInitialLoad, чтобы избежать
+    // race-condition при re-логине и подключения со старым токеном.
+    // Он должен срабатывать только при изменении самого токена,
+    // но после завершения первоначальной загрузки.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, initClient]);
 
   // --- Подписка с сохранением ---
   const subscribe = useCallback(
