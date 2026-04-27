@@ -12,11 +12,11 @@ import java.util.stream.Stream;
 
 
 @Service
-public class EffectEngine {
+public class EffectService {
 
     private final Map<EffectType, EffectStrategy> strategies;
 
-    public EffectEngine(List<EffectStrategy> strategies) {
+    public EffectService(List<EffectStrategy> strategies) {
         this.strategies = strategies.stream()
                 .collect(Collectors.toMap(
                         EffectStrategy::getType,

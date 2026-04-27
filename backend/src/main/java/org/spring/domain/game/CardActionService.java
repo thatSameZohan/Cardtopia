@@ -5,7 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.spring.domain.card.CardCode;
 import org.spring.domain.card.CardFaction;
 import org.spring.domain.card.CardType;
-import org.spring.domain.effect.EffectEngine;
+import org.spring.domain.effect.EffectService;
 import org.spring.dto.CardInstance;
 import org.spring.dto.GameState;
 import org.spring.dto.PlayCardRequest;
@@ -22,9 +22,10 @@ import java.util.stream.Stream;
 @Component
 public class CardActionService {
 
-    private final EffectEngine effectService;
+    private final EffectService effectService;
 
     public void play(GameState gs, PlayerState player, PlayCardRequest req){
+
         CardInstance card = player.getHand().stream()
                 .filter(c -> c.getId().equals(req.cardId()))
                 .findFirst()

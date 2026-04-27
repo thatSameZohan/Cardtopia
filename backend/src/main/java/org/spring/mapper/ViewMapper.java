@@ -9,7 +9,7 @@ import java.util.List;
 public class ViewMapper {
 
     public PrivatePlayerView toPrivatePlayerView (PlayerState player){
-        return new PrivatePlayerView (player.getHand(), player.getDiscardPile());
+        return new PrivatePlayerView (player.getPlayerId(),player.getHand(), player.getDiscardPile());
     }
 
     public GameView toGameView(GameState gs) {

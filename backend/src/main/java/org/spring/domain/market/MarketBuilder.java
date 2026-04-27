@@ -21,6 +21,9 @@ public class MarketBuilder {
 
         // MARKET DECK
         List<CardInstance> marketDeck = new ArrayList<>(registry.getAll().values().stream()
+                .filter(c-> c.getCode() != CardCode.CORE_EXPLORER)
+                .filter(c-> c.getCode() != CardCode.CORE_SCOUT)
+                .filter(c-> c.getCode() != CardCode.CORE_VIPER)
                 .flatMap(def -> cardFactory.expand(def).stream())
                 .toList());
 
@@ -30,12 +33,11 @@ public class MarketBuilder {
         gs.getMarketDeck().addAll(marketDeck);
 
         // EXPLORER
-        CardInstance explorer = cardFactory.expand(
-                registry.get(CardCode.CORE_EXPLORER)
-        ).getFirst();
+        List <CardInstance> explorers = cardFactory.expand(
+                registry.get(CardCode.CORE_EXPLORER));
 
         gs.getExplorerPile().clear();
-        gs.getExplorerPile().add(explorer);
+        gs.getExplorerPile().addAll(explorers);
 
         // 5 карт на рынок
         gs.getMarket().clear();
