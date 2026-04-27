@@ -73,6 +73,8 @@ export const Table = ({
     tableRef.current?.clear(); // очищаем стол
   };
 
+  console.log(player?.hand, '1111');
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       {/* Оппонент */}
@@ -87,7 +89,7 @@ export const Table = ({
               key={index}
               id={`opponent-card-${index}`}
               variant="back"
-              type={'Ship'}
+              type={'SHIP'}
             />
           ))}
         </div>
@@ -124,9 +126,9 @@ export const Table = ({
         <div className={styles['me__card-container']}>
           {player?.hand.map((card) => {
             switch (card.type) {
-              case 'Ship':
+              case 'SHIP':
                 return <ShipCard key={card.id} {...card} />;
-              case 'Base':
+              case 'BASE':
                 return <BaseCard key={card.id} {...card} />;
               case 'OUTPOST':
                 return <OutpostCard key={card.id} {...card} />;

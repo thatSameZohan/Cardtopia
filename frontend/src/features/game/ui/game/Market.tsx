@@ -11,7 +11,6 @@ export const Market = ({ cards, onBuy, gold }: MarketProps) => (
     <div style={{ display: 'flex', gap: 5 }}>
       {cards.map((card: any) => {
         const canBuy = gold >= card.cost;
-        console.log(card.cost, gold);
         return (
           <Card
             key={card.id}
