@@ -1,4 +1,3 @@
-import { Message } from './../../chat/hook/useChat';
 import { useWSContext } from '@/shared/ui/WSProvider/WSProvider';
 import { StompSubscription } from '@stomp/stompjs';
 import { useEffect, useRef, useState } from 'react';

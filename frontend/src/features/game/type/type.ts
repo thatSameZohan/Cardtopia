@@ -46,7 +46,7 @@ export type MarketProps = {
   gold: number;
   onBuy: (cardId: string, cardCost: number) => void;
 };
-export type CardTypeName = 'Ship' | 'Base' | 'OUTPOST';
+export type CardTypeName = 'SHIP' | 'BASE' | 'OUTPOST';
 
 export interface CardType {
   id: string;
