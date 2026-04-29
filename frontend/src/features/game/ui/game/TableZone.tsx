@@ -1,59 +1,50 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+
 import { useDrop } from 'react-dnd';
 import styles from './Game.module.scss';
-import { Card } from './Card/Card';
 import { CardType } from '../../type/type';
+import { useRef, useState } from 'react';
+import { Card } from './Card/Card';
 
-type TableZoneProps = {
+type Props = {
   title: string;
-  accept: string; // Любая строка для DnD, не CardTypeName
+  accept: string;
+  cards?: CardType[];
   onDrop: (card: CardType) => void;
-  initialCards?: CardType[];
-  onClear?: React.RefObject<{ clear: () => void } | null>;
 };
 
-export function TableZone({
-  title,
-  accept,
-  onDrop,
-  initialCards = [],
-  onClear,
-}: TableZoneProps) {
-  const [cards, setCards] = useState<CardType[]>(initialCards);
+export function TableZone({ title, accept, cards = [], onDrop }: Props) {
+  const ref = useRef<HTMLDivElement>(null);
 
-  const [{ isOver }, drop] = useDrop<CardType, void, { isOver: boolean }>(
-    () => ({
-      accept,
-      drop: (item) => {
-        if (!cards.find((c) => c.id === item.id)) {
-          setCards((prev) => [...prev, item]);
-          onDrop(item);
-        }
-      },
-      collect: (monitor) => ({
-        isOver: monitor.isOver(),
-      }),
+  const [{ isOver }, drop] = useDrop(() => ({
+    accept,
+    drop: (item: CardType) => {
+      onDrop(item);
+    },
+    collect: (monitor) => ({
+      isOver: monitor.isOver(),
     }),
-    [cards, onDrop, accept],
-  );
+  }));
 
-  useEffect(() => {
-    if (onClear) {
-      onClear.current = { clear: () => setCards([]) };
-    }
-  }, [onClear]);
+  drop(ref);
 
   return (
     <div
-      ref={drop as unknown as React.Ref<HTMLDivElement>}
+      ref={ref}
       className={styles.zone}
-      style={{ background: isOver ? '#e0ffe0' : '#f9f9f9' }}
+      style={{
+        background: isOver ? '#d1ffd1' : '#f9f9f9',
+        transition: '0.15s',
+      }}
     >
       <h3>{title}</h3>
-      {cards.map((card) => (
-        <Card key={card.id} {...card} variant="face" disabled />
-      ))}
+
+      {/* 🔥 РЕАЛЬНЫЙ РЕНДЕР КАРТ */}
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+        {cards.map((card) => (
+          <Card key={card.id} {...card} variant="face" disabled />
+        ))}
+      </div>
     </div>
   );
 }

@@ -1,4 +1,3 @@
-import React from 'react';
 import { Card } from './Card';
 import { CardType } from '@/features/game/type/type';
 

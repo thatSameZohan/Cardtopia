@@ -1,4 +1,5 @@
 'use client';
+
 import { useState, useRef } from 'react';
 import { Card } from './Card/Card';
 import { Market } from './Market';
@@ -32,6 +33,7 @@ export const Table = ({
   const me = Object.values(stateGame.players).find(
     (p) => p.playerId === username,
   );
+
   const opponent = Object.values(stateGame.players).find(
     (p) => p.playerId !== username,
   );
@@ -39,25 +41,25 @@ export const Table = ({
   const [gold, setGold] = useState(0);
   const [attack, setAttack] = useState(0);
 
+  const [tableCards, setTableCards] = useState<CardType[]>([]);
+
   const tableRef = useRef<{ clear: () => void }>(null);
 
   const handlePlayCard = (card: CardType) => {
-    // ищем способность TRADE
-    const tradeAbility = card.abilities?.find((a) => a.type === 'TRADE');
-    const combatAbility = card.abilities?.find((a) => a.type === 'COMBAT');
+    const trade = card.abilities?.find((a) => a.type === 'TRADE');
+    const combat = card.abilities?.find((a) => a.type === 'COMBAT');
 
-    const gainedGold = tradeAbility?.value ?? 0;
-    const gainedAttack = combatAbility?.value ?? 0;
+    setGold((p) => p + (trade?.value ?? 0));
+    setAttack((p) => p + (combat?.value ?? 0));
 
-    setGold((prev) => prev + gainedGold); // прибавляем золото из TRADE
-    setAttack((prev) => prev + gainedAttack); // прибавляем атаку
+    setTableCards((prev) => [...prev, card]);
 
     onPlayCard(card.id);
   };
 
   const handleBuyCard = (cardId: string, cardCost: number) => {
     if (cardCost > gold) return;
-    setGold((prev) => prev - cardCost);
+    setGold((p) => p - cardCost);
     onBuyCard(cardId);
   };
 
@@ -70,59 +72,61 @@ export const Table = ({
     onEndTurn();
     setGold(0);
     setAttack(0);
-    tableRef.current?.clear(); // очищаем стол
+    setTableCards([]);
+    tableRef.current?.clear?.();
   };
-
-  console.log(player?.hand, '1111');
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      {/* Оппонент */}
+      {/* ОППОНЕНТ */}
       <div>
-        <h3 className={styles['opponent__title']}>
+        <h3 className={styles.opponent__title}>
           Оппонент: {opponent?.playerId}
         </h3>
-        <h1 className={styles['opponent__title']}>❤ {opponent?.health}</h1>
+        <h1 className={styles.opponent__title}>❤ {opponent?.health}</h1>
+
         <div className={styles['opponent__card-container']}>
-          {Array.from({ length: opponent?.handSize ?? 0 }).map((_, index) => (
+          {Array.from({ length: opponent?.handSize ?? 0 }).map((_, i) => (
             <Card
-              key={index}
-              id={`opponent-card-${index}`}
+              key={i}
+              id={`opponent-${i}`}
               variant="back"
-              type={'SHIP'}
+              type="SHIP"
+              dndType="card"
             />
           ))}
         </div>
       </div>
-      {/* Рынок */}
+
+      {/* РЫНОК */}
       <Market
         gold={gold}
         cards={stateGame.market}
-        onBuy={(cardId, cardCost) => handleBuyCard(cardId, cardCost)}
-      />
-      {/* Стол */}
-      <div>
-        <h3>Стол</h3>
-        <h3 className={styles['me__title']}>Золото: {gold}</h3>
-        <h3 className={styles['me__title']}>Атака: {attack}</h3>
-      </div>
-      <TableZone
-        title="Стол"
-        accept="card" // DnD тип — любая строка
-        onDrop={(card) => handlePlayCard(card)}
-        onClear={tableRef}
+        onBuy={(id, cost) => handleBuyCard(id, cost)}
       />
 
-      {/* <TableZone
-        title="Рынок"
-        accept="market"
-        onDrop={(card) => handleBuyCard(card.id, card.cost ?? 0)}
-      /> */}
-      {/* Ваши карты */}
+      {/* СТАТУС */}
+      <div>
+        <h3>Стол</h3>
+        <h3 className={styles.me__title}>Золото: {gold}</h3>
+        <h3 className={styles.me__title}>Атака: {attack}</h3>
+      </div>
+
+      {/* СТОЛ */}
+      <TableZone
+        title="Стол"
+        accept="card"
+        cards={tableCards}
+        onDrop={handlePlayCard}
+        // onClear={tableRef}
+      />
+
+      {/* РУКА */}
       <div className={clsx(stateGame.activePlayerId === username && styles.me)}>
-        <h3 className={styles['me__title']}>Ваши карты</h3>
-        <h3 className={styles['me__title']}>{me?.playerId}</h3>
-        <h1 className={styles['me__title']}>❤ {me?.health}</h1>
+        <h3 className={styles.me__title}>Ваши карты</h3>
+        <h3 className={styles.me__title}>{me?.playerId}</h3>
+        <h1 className={styles.me__title}>❤ {me?.health}</h1>
+
         <div className={styles['me__card-container']}>
           {player?.hand.map((card) => {
             switch (card.type) {
@@ -136,10 +140,10 @@ export const Table = ({
                 return null;
             }
           })}
-          ;
         </div>
       </div>
-      {/* Кнопки */}
+
+      {/* КНОПКИ */}
       <button onClick={handleAttack}>Attack</button>
       <button onClick={handleEndTurn}>End Turn</button>
     </div>
