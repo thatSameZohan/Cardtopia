@@ -191,8 +191,8 @@
             div.innerHTML += `
         <div class="player ${p.active ? "active" : ""}">
             <b>${p.playerId}</b>
-            HP:${p.health} ATK:${p.currentAttack} GOLD:${p.currentGold}<br>
-            FD:${p.forcedDiscard} TOP:${p.topDeckNextShip} FREE:${p.buyFreeTopDeck}
+            HP:${p.health} ATK:${p.currentAttack} ЗОЛОТО:${p.currentGold}<br>
+            ПРАВ УДАЛИТЬ:${p.rightExile}<br> ПРИНУДИТЕЛЬНЫЙ СБРОС:${p.forcedDiscard}<br> КУПИТЬ НАВЕРХ:${p.topDeckNextShip}<br> БЕСПЛАТНО НАВЕРХ:${p.buyFreeTopDeck}
 
             <div><b>Bases</b><div class="row">${p.bases.map(structureView).join("")}</div></div>
             <div><b>Outposts</b><div class="row">${p.outposts.map(structureView).join("")}</div></div>

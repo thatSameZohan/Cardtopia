@@ -1,5 +1,5 @@
 'use client';
-import React from 'react';
+// import React from 'react';
 import { Card } from './Card/Card';
 import { MarketProps } from '../../type/type';
 import clsx from 'clsx';

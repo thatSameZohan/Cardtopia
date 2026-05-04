@@ -30,7 +30,7 @@ export interface PlayerState {
   discardSize: number;
   handSize: number;
 }
-type CardAbility = null; // временно
+// type CardAbility = null;
 
 // export interface CardType {
 //   id: string;

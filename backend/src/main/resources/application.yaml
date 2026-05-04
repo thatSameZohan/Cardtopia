@@ -12,6 +12,10 @@ spring:
   jpa:
     hibernate:
       ddl-auto: none
+    show-sql: true
+  integration:
+    management:
+      default-logging-enabled:
 jwt:
   secret: afafa876saf876saf876as8sf6s87as6f7fas6fas78f6
   access-ms: 1200000 #20 min

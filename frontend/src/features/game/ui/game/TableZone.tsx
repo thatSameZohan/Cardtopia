@@ -3,7 +3,7 @@
 import { useDrop } from 'react-dnd';
 import styles from './Game.module.scss';
 import { CardType } from '../../type/type';
-import { useRef, useState } from 'react';
+import { useRef } from 'react';
 import { Card } from './Card/Card';
 
 type Props = {

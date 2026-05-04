@@ -8,7 +8,7 @@ import { Button } from '@/shared/ui/Button';
 import { AuthWrapper } from '@/shared/ui/AuthWrapper';
 import styles from '@/shared/ui/AuthWrapper/AuthWrapper.module.scss';
 import { useLoginMutation } from '@/redux/auth/auth';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { LoginInput, loginSchema } from '../../model/auth';
 import { routes } from '@/shared/router/paths';
 

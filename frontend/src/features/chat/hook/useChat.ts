@@ -1,4 +1,3 @@
-import { RootState, useAppSelector } from '@/redux/store';
 import { useWSContext } from '@/shared/ui/WSProvider/WSProvider';
 import { StompSubscription } from '@stomp/stompjs';
 import { useCallback, useEffect, useRef, useState } from 'react';

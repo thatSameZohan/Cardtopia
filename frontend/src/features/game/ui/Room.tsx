@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import React, { useEffect, useCallback, useRef } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import Cookies from 'js-cookie';
 
 import { useRooms } from '@/features/gameLobby/hook/useRooms';

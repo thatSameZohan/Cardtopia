@@ -1,6 +1,6 @@
 'use client';
 import clsx from 'clsx';
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useRooms } from '../hook/useRooms';
 import styles from './RoomList.module.scss';

@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+// import React from 'react';
 import { useGame } from '../../hook/useGame';
 import styles from './Game.module.scss';
 import { Table } from './Table';
