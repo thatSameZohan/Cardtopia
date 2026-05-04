@@ -1,10 +1,6 @@
 {
   "compilerOptions": {
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "module": "esnext",
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
@@ -35,25 +31,15 @@
     "noEmit": true,
     "isolatedModules": true,
     "incremental": true,
-    "baseUrl": "src",
+    "baseUrl": ".",
     "paths": {
-      "@/*": [
-        "./*"
-      ],
-      "@styles/*": [
-        "app/styles/*"
-      ]
+      "@/*": ["./src/*"],
+      "@styles/*": ["./src/app/styles/*"],
+      "shared/*": ["./src/shared/*"]
     },
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ]
   },
-  "exclude": [
-    "./node_modules/**/*",
-    "./out/**/*"
-  ],
+  "plugins": [{ "name": "next" }],
+  "exclude": ["./node_modules/**/*", "./out/**/*"],
   "include": [
     "**/*.ts",
     "**/*.tsx",
